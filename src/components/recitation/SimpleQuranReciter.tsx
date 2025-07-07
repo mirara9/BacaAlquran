@@ -249,13 +249,15 @@ export function SimpleQuranReciter() {
         })
       })
 
-      // If no valid matches found, check if similarity is very low
+      // If no valid matches found, check if we should mark current verse as incorrect
       const currentVerseData = AL_FATIHA_VERSES.find(v => v.id === currentVerse)
       if (!foundValidMatch && currentVerseData) {
         const currentVerseSimilarity = calculateArabicSimilarity(transcript, currentVerseData.arabic)
-        if (currentVerseSimilarity < 40) {
-          console.log(`❌ Current verse ${currentVerse} marked as incorrect (${currentVerseSimilarity}%)`)
-          // Don't automatically mark as incorrect - let user try again
+        if (currentVerseSimilarity < 75) {
+          console.log(`❌ Current verse ${currentVerse} marked as incorrect (${currentVerseSimilarity}%) - incomplete or wrong recitation`)
+          // Mark as incorrect if similarity is below threshold
+          newIncorrect.add(currentVerse)
+          newHighlighted.delete(currentVerse)
         }
       }
     }
@@ -377,30 +379,65 @@ export function SimpleQuranReciter() {
     return matches.sort((a, b) => b.similarity - a.similarity)
   }
 
-  // Calculate similarity between spoken text and verse
+  // Calculate similarity between spoken text and verse with strict validation
   const calculateArabicSimilarity = (spoken: string, expected: string): number => {
-    const normalizedSpoken = cleanArabicText(spoken)
-    const normalizedExpected = cleanArabicText(expected)
+    const normalizedSpoken = cleanArabicText(spoken.trim())
+    const normalizedExpected = cleanArabicText(expected.trim())
     
-    // Check for partial matches within the verse
-    const words = normalizedSpoken.split(/\s+/)
-    let maxSimilarity = 0
+    console.log(`🔍 Comparing: "${normalizedSpoken}" vs "${normalizedExpected}"`)
     
-    words.forEach(word => {
-      if (word.length > 2) {
-        if (normalizedExpected.includes(word)) {
-          maxSimilarity = Math.max(maxSimilarity, 90)
-        } else {
-          const similarity = calculateSimilarity(word, normalizedExpected)
-          maxSimilarity = Math.max(maxSimilarity, similarity)
-        }
+    // Strict validation: Check if the spoken text contains the complete expected verse
+    // The spoken text should include all major words from the expected verse
+    
+    const spokenWords = normalizedSpoken.split(/\s+/).filter(word => word.length > 1)
+    const expectedWords = normalizedExpected.split(/\s+/).filter(word => word.length > 1)
+    
+    console.log(`📝 Spoken words: [${spokenWords.join(', ')}]`)
+    console.log(`📝 Expected words: [${expectedWords.join(', ')}]`)
+    
+    // Count how many expected words are found in spoken text
+    let foundWords = 0
+    let totalExpectedWords = expectedWords.length
+    
+    expectedWords.forEach(expectedWord => {
+      // Check if this expected word (or very similar) appears in spoken text
+      const found = spokenWords.some(spokenWord => {
+        const wordSimilarity = calculateSimilarity(spokenWord, expectedWord)
+        return wordSimilarity >= 85 // High threshold for individual words
+      })
+      
+      if (found) {
+        foundWords++
+        console.log(`✅ Found word match: "${expectedWord}"`)
+      } else {
+        console.log(`❌ Missing word: "${expectedWord}"`)
       }
     })
     
-    // Also check overall similarity
-    const overallSimilarity = calculateSimilarity(normalizedSpoken, normalizedExpected)
+    // Calculate percentage of expected words found
+    const wordCoverage = (foundWords / totalExpectedWords) * 100
+    console.log(`📊 Word coverage: ${foundWords}/${totalExpectedWords} = ${wordCoverage.toFixed(1)}%`)
     
-    return Math.max(maxSimilarity, overallSimilarity)
+    // Additional check: Make sure spoken text doesn't have too many extra words
+    const extraWordsRatio = spokenWords.length / expectedWords.length
+    console.log(`📏 Length ratio: ${extraWordsRatio.toFixed(2)} (spoken/expected)`)
+    
+    // Strict requirements:
+    // 1. Must have at least 90% of expected words
+    // 2. Shouldn't be more than 150% longer than expected (some extra words allowed)
+    // 3. Overall similarity should also be decent
+    
+    const overallSimilarity = calculateSimilarity(normalizedSpoken, normalizedExpected)
+    console.log(`🎯 Overall similarity: ${overallSimilarity}%`)
+    
+    if (wordCoverage >= 90 && extraWordsRatio <= 1.5 && overallSimilarity >= 70) {
+      const finalScore = Math.min(wordCoverage, overallSimilarity)
+      console.log(`✅ PASSED strict validation with score: ${finalScore}%`)
+      return finalScore
+    } else {
+      console.log(`❌ FAILED strict validation - Coverage: ${wordCoverage}%, Ratio: ${extraWordsRatio}, Overall: ${overallSimilarity}%`)
+      return Math.min(wordCoverage * 0.7, overallSimilarity * 0.7) // Reduced score for failed validation
+    }
   }
 
   const handleStartListening = () => {
