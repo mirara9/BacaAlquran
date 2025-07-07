@@ -6,7 +6,6 @@ import { Button } from '@/components/ui/Button'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/Card'
 import { Progress } from '@/components/ui/Progress'
 import { RealtimeRecorder } from '@/components/audio/RealtimeRecorder'
-import { MicrophoneTest } from '@/components/debug/MicrophoneTest'
 import { ContinuousQuranDisplay } from '@/components/quran/ContinuousQuranDisplay'
 import { useRealtimeSpeechRecognition } from '@/hooks/useRealtimeSpeechRecognition'
 import { useAudioPlayer, useTextToSpeech } from '@/hooks/useAudioPlayer'
@@ -283,11 +282,33 @@ export default function RecitationPage() {
   // Removed - not needed with real-time recognition
 
   const handleVerseSelect = (verseId: string) => {
+    console.log('🔄 Verse Selection:', { 
+      newVerseId: verseId, 
+      previousVerseId: currentVerseId,
+      resettingWordIndex: true 
+    })
+    
     setCurrentVerseId(verseId)
     setCurrentVerse(mockVerses.find(v => v.id === verseId)!)
     setHighlightedWords([])
     setIncorrectWords([])
     setCurrentWordId(undefined)
+    setCurrentWordIndex(0) // ✅ Reset word index to start from beginning
+    
+    // Set the first word as current for the new verse
+    const newVerse = mockVerses.find(v => v.id === verseId)
+    if (newVerse) {
+      const newVerseWords = createWordsFromVerse(newVerse)
+      if (newVerseWords.length > 0) {
+        setCurrentWordId(newVerseWords[0].id)
+        console.log('✅ New verse setup complete:', {
+          verseId: newVerse.id,
+          firstWordId: newVerseWords[0].id,
+          firstWordArabic: newVerseWords[0].arabicText,
+          firstWordTransliteration: newVerseWords[0].transliteration
+        })
+      }
+    }
     
     // Create new session
     createSession(verseId)
@@ -427,9 +448,6 @@ export default function RecitationPage() {
 
           {/* Sidebar */}
           <div className="space-y-6">
-            {/* Microphone Diagnostics - Temporary for debugging */}
-            <MicrophoneTest />
-            
             {/* Real-time Recognition Card */}
             <RealtimeRecorder
               isListening={speechRecognition.isListening}
@@ -536,6 +554,20 @@ export default function RecitationPage() {
                 <div className="flex items-start space-x-3">
                   <div className="w-6 h-6 bg-green-700 text-white rounded-full flex items-center justify-center text-xs font-bold">4</div>
                   <p>Review feedback and practice again if needed</p>
+                </div>
+                
+                <div className="pt-3 border-t">
+                  <p className="text-sm text-gray-600 mb-2">
+                    <strong>Having microphone issues?</strong>
+                  </p>
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={() => navigate('/diagnostics')}
+                    className="w-full"
+                  >
+                    Run Microphone Diagnostics
+                  </Button>
                 </div>
               </CardContent>
             </Card>

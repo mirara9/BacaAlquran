@@ -10,6 +10,7 @@ const HomePage = React.lazy(() => import('@/pages/HomePage'))
 const RecitationPage = React.lazy(() => import('@/pages/RecitationPage'))
 const DashboardPage = React.lazy(() => import('@/pages/DashboardPage'))
 const SettingsPage = React.lazy(() => import('@/pages/SettingsPage'))
+const DiagnosticsPage = React.lazy(() => import('@/pages/DiagnosticsPage'))
 const NotFoundPage = React.lazy(() => import('@/pages/NotFoundPage'))
 
 function App() {
@@ -33,6 +34,7 @@ function App() {
               <Route path="/recitation" element={<RecitationPage />} />
               <Route path="/dashboard" element={<DashboardPage />} />
               <Route path="/settings" element={<SettingsPage />} />
+              <Route path="/diagnostics" element={<DiagnosticsPage />} />
               <Route path="*" element={<NotFoundPage />} />
             </Routes>
           </Suspense>
