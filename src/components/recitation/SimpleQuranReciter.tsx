@@ -258,6 +258,20 @@ export function SimpleQuranReciter() {
           // Mark as incorrect if similarity is below threshold
           newIncorrect.add(currentVerse)
           newHighlighted.delete(currentVerse)
+          
+          // Cancel any pending timeout so the transcript stays visible for incorrect attempts
+          if (silenceTimeout) {
+            clearTimeout(silenceTimeout)
+            setSilenceTimeout(null)
+            console.log('🚫 Cancelled transcript clearing - keeping incorrect input visible')
+          }
+          
+          // Set a longer timeout (5 seconds) for incorrect attempts so user can see what they said
+          const incorrectTimeout = setTimeout(() => {
+            clearTranscriptForNewAttempt()
+            console.log('🧹 Cleared transcript after showing incorrect attempt')
+          }, 5000)
+          setSilenceTimeout(incorrectTimeout)
         }
       }
     }
