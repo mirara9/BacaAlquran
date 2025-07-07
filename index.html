@@ -9,22 +9,42 @@
 <body>
     <div class="container">
         <header>
-            <h1>القرآن الكريم - Quran Reader</h1>
-            <div class="controls">
-                <button id="startBtn">Start Reading</button>
-                <button id="stopBtn" disabled>Stop Reading</button>
-                <button id="nextPageBtn">Next Page</button>
-                <button id="prevPageBtn">Previous Page</button>
-                <button id="tajweedToggle" class="tajweed-toggle">Enable Tajweed</button>
-                <button id="colorLegendToggle">Show Color Guide</button>
-            </div>
-            <div style="margin-top: 15px; text-align: center;">
-                <label for="qariSelector" style="color: white; margin-right: 10px;">🎵 Select Qari:</label>
-                <select id="qariSelector" style="padding: 8px 12px; border-radius: 20px; border: none; background: white; color: #4CAF50; font-weight: bold;">
-                    <option value="abdul_basit">Sheikh Abdul Basit (Mujawwad)</option>
-                    <option value="mishary">Sheikh Mishary (Murattal)</option>
-                    <option value="sudais">Sheikh Sudais (Clear)</option>
-                </select>
+            <div class="header-content">
+                <h1>
+                    <span class="logo-icon">📖</span>
+                    القرآن الكريم - Quran Reader
+                </h1>
+                <div class="controls">
+                    <button id="startBtn">
+                        <span>▶️</span>
+                        Start Reading
+                    </button>
+                    <button id="stopBtn" disabled>
+                        <span>⏹️</span>
+                        Stop Reading
+                    </button>
+                    <button id="nextPageBtn">
+                        <span>⏭️</span>
+                        Next Page
+                    </button>
+                    <button id="prevPageBtn">
+                        <span>⏮️</span>
+                        Previous Page
+                    </button>
+                    <button id="tajweedToggle">
+                        <span>🎯</span>
+                        Enable Tajweed
+                    </button>
+                    <button id="colorLegendToggle">
+                        <span>🎨</span>
+                        Tajweed Guide
+                    </button>
+                    <select id="qariSelector" style="padding: 10px 16px; border-radius: 8px; border: 1px solid #e2e8f0; background: white; color: #475569; font-weight: 500; font-size: 0.875rem;">
+                        <option value="abdul_basit">🎵 Sheikh Abdul Basit</option>
+                        <option value="mishary">🎵 Sheikh Mishary</option>
+                        <option value="sudais">🎵 Sheikh Sudais</option>
+                    </select>
+                </div>
             </div>
         </header>
         
@@ -37,35 +57,35 @@
                 <h3>🎨 Tajweed Color Guide</h3>
                 <div class="legend-item">
                     <span class="legend-text">Ikhfaa (Concealment)</span>
-                    <div class="legend-color" style="background: #FFE0B2; border-color: #FF9800;"></div>
+                    <div class="legend-color" style="background: rgba(251, 191, 36, 0.15); border-color: rgba(251, 191, 36, 0.4);"></div>
                 </div>
                 <div class="legend-item">
                     <span class="legend-text">Idgham (Merging)</span>
-                    <div class="legend-color" style="background: #C8E6C9; border-color: #4CAF50;"></div>
+                    <div class="legend-color" style="background: rgba(34, 197, 94, 0.15); border-color: rgba(34, 197, 94, 0.4);"></div>
                 </div>
                 <div class="legend-item">
                     <span class="legend-text">Iqlab (Conversion)</span>
-                    <div class="legend-color" style="background: #F3E5F5; border-color: #9C27B0;"></div>
+                    <div class="legend-color" style="background: rgba(147, 51, 234, 0.15); border-color: rgba(147, 51, 234, 0.4);"></div>
                 </div>
                 <div class="legend-item">
                     <span class="legend-text">Izhar (Clear)</span>
-                    <div class="legend-color" style="background: #E1F5FE; border-color: #03A9F4;"></div>
+                    <div class="legend-color" style="background: rgba(59, 130, 246, 0.15); border-color: rgba(59, 130, 246, 0.4);"></div>
                 </div>
                 <div class="legend-item">
                     <span class="legend-text">Qalqalah (Echo)</span>
-                    <div class="legend-color" style="background: #FFEBEE; border-color: #F44336;"></div>
+                    <div class="legend-color" style="background: rgba(239, 68, 68, 0.15); border-color: rgba(239, 68, 68, 0.4);"></div>
                 </div>
                 <div class="legend-item">
                     <span class="legend-text">Madd (Elongation)</span>
-                    <div class="legend-color" style="background: #F1F8E9; border-color: #66BB6A;"></div>
+                    <div class="legend-color" style="background: rgba(34, 197, 94, 0.1); border-color: rgba(34, 197, 94, 0.3);"></div>
                 </div>
                 <div class="legend-item">
                     <span class="legend-text">Heavy Letters</span>
-                    <div class="legend-color" style="background: #FFF3E0; border-color: #BF360C;"></div>
+                    <div class="legend-color" style="background: rgba(251, 146, 60, 0.15); border-color: rgba(251, 146, 60, 0.4);"></div>
                 </div>
                 <div class="legend-item">
                     <span class="legend-text">Shaddah (Emphasis)</span>
-                    <div class="legend-color" style="background: #E8EAF6; border-color: #1A237E;"></div>
+                    <div class="legend-color" style="background: rgba(99, 102, 241, 0.15); border-color: rgba(99, 102, 241, 0.4);"></div>
                 </div>
             </div>
             
