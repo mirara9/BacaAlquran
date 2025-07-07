@@ -138,24 +138,44 @@ export function ContinuousQuranDisplay({
     const words: (QuranWord & { verseInfo: string })[] = []
     
     verses.forEach(verse => {
-      const arabicWords = verse.arabicText.split(/\s+/)
-      const transliterationWords = verse.transliteration?.split(/\s+/) || []
-      
-      arabicWords.forEach((arabicText, index) => {
-        words.push({
-          id: `${verse.id}-word-${index}`,
-          verseId: verse.id,
-          position: index,
-          arabicText: arabicText.trim(),
-          transliteration: transliterationWords[index] || '',
-          translation: `Word ${index + 1} of verse ${verse.verseNumber}`,
-          verseInfo: `${verse.surahNumber}:${verse.verseNumber}`,
-          audioTimestamp: {
-            start: index * 0.8,
-            end: (index + 1) * 0.8
-          }
+      // Use predefined word data if available, otherwise split the text
+      if (verse.words && verse.words.length > 0) {
+        verse.words.forEach((wordData, index) => {
+          words.push({
+            id: `${verse.id}-word-${index}`,
+            verseId: verse.id,
+            position: index,
+            arabicText: wordData.arabic,
+            transliteration: wordData.transliteration,
+            translation: wordData.translation,
+            verseInfo: `${verse.surahNumber}:${verse.verseNumber}`,
+            audioTimestamp: {
+              start: index * 0.8,
+              end: (index + 1) * 0.8
+            }
+          })
         })
-      })
+      } else {
+        // Fallback to splitting text
+        const arabicWords = verse.arabicText.split(/\s+/)
+        const transliterationWords = verse.transliteration?.split(/\s+/) || []
+        
+        arabicWords.forEach((arabicText, index) => {
+          words.push({
+            id: `${verse.id}-word-${index}`,
+            verseId: verse.id,
+            position: index,
+            arabicText: arabicText.trim(),
+            transliteration: transliterationWords[index] || '',
+            translation: `Word ${index + 1} of verse ${verse.verseNumber}`,
+            verseInfo: `${verse.surahNumber}:${verse.verseNumber}`,
+            audioTimestamp: {
+              start: index * 0.8,
+              end: (index + 1) * 0.8
+            }
+          })
+        })
+      }
       
       // Add verse separator
       words.push({

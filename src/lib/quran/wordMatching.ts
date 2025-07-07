@@ -92,6 +92,14 @@ export function matchSpokenWords(
   let totalSimilarity = 0
   let matchedCount = 0
   
+  console.log('🔍 Word Matching Debug:', {
+    spokenText,
+    spokenWords,
+    expectedWords: expectedWords.map(w => ({ arabic: w.arabicText, transliteration: w.transliteration })),
+    currentWordIndex,
+    similarityThreshold
+  })
+  
   // Process each spoken word
   for (let i = 0; i < spokenWords.length; i++) {
     const spokenWord = spokenWords[i]

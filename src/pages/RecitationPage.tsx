@@ -14,7 +14,7 @@ import { useAppActions, useCurrentSession } from '@/stores/appStore'
 import { QuranVerse, QuranWord } from '@/types'
 import { matchSpokenWords, matchRealTimeWords, generatePronunciationFeedback } from '@/lib/quran/wordMatching'
 
-// Mock data with word-level breakdown - in real app this would come from API
+// Corrected mock data with proper word-by-word breakdown
 const mockVerses: QuranVerse[] = [
   {
     id: 'fatiha-1',
@@ -23,7 +23,13 @@ const mockVerses: QuranVerse[] = [
     arabicText: 'بِسْمِ اللَّهِ الرَّحْمَنِ الرَّحِيمِ',
     transliteration: 'Bismillāhi r-raḥmāni r-raḥīm',
     translation: 'In the name of Allah, the Entirely Merciful, the Especially Merciful.',
-    audioUrl: '/audio/fatiha-1.mp3'
+    audioUrl: '/audio/fatiha-1.mp3',
+    words: [
+      { arabic: 'بِسْمِ', transliteration: 'Bismi', translation: 'In the name' },
+      { arabic: 'اللَّهِ', transliteration: 'llāhi', translation: 'of Allah' },
+      { arabic: 'الرَّحْمَنِ', transliteration: 'r-raḥmāni', translation: 'the Entirely Merciful' },
+      { arabic: 'الرَّحِيمِ', transliteration: 'r-raḥīm', translation: 'the Especially Merciful' }
+    ]
   },
   {
     id: 'fatiha-2',
@@ -32,7 +38,13 @@ const mockVerses: QuranVerse[] = [
     arabicText: 'الْحَمْدُ لِلَّهِ رَبِّ الْعَالَمِينَ',
     transliteration: 'Al-ḥamdu lillāhi rabbi l-ʿālamīn',
     translation: 'All praise is due to Allah, Lord of the worlds.',
-    audioUrl: '/audio/fatiha-2.mp3'
+    audioUrl: '/audio/fatiha-2.mp3',
+    words: [
+      { arabic: 'الْحَمْدُ', transliteration: 'Al-ḥamdu', translation: 'All praise' },
+      { arabic: 'لِلَّهِ', transliteration: 'lillāhi', translation: 'is due to Allah' },
+      { arabic: 'رَبِّ', transliteration: 'rabbi', translation: 'Lord' },
+      { arabic: 'الْعَالَمِينَ', transliteration: 'l-ʿālamīn', translation: 'of the worlds' }
+    ]
   },
   {
     id: 'fatiha-3',
@@ -41,12 +53,33 @@ const mockVerses: QuranVerse[] = [
     arabicText: 'الرَّحْمَنِ الرَّحِيمِ',
     transliteration: 'Ar-raḥmāni r-raḥīm',
     translation: 'The Entirely Merciful, the Especially Merciful,',
-    audioUrl: '/audio/fatiha-3.mp3'
+    audioUrl: '/audio/fatiha-3.mp3',
+    words: [
+      { arabic: 'الرَّحْمَنِ', transliteration: 'Ar-raḥmāni', translation: 'The Entirely Merciful' },
+      { arabic: 'الرَّحِيمِ', transliteration: 'r-raḥīm', translation: 'the Especially Merciful' }
+    ]
   }
 ]
 
-// Create word-level data from verses
+// Create word-level data from verses using proper word boundaries
 const createWordsFromVerse = (verse: QuranVerse): QuranWord[] => {
+  // Use the predefined word data if available, otherwise fall back to splitting
+  if (verse.words && verse.words.length > 0) {
+    return verse.words.map((wordData, index) => ({
+      id: `${verse.id}-word-${index}`,
+      verseId: verse.id,
+      position: index,
+      arabicText: wordData.arabic,
+      transliteration: wordData.transliteration,
+      translation: wordData.translation,
+      audioTimestamp: {
+        start: index * 0.8,
+        end: (index + 1) * 0.8
+      }
+    }))
+  }
+  
+  // Fallback to simple splitting if no word data is provided
   const words = verse.arabicText.split(/\s+/)
   const transliterationWords = verse.transliteration.split(/\s+/)
   
@@ -184,6 +217,10 @@ export default function RecitationPage() {
       })
     }
     
+    // Check if verse is completed (regardless of accuracy for auto-advance)
+    const isVerseCompleted = matchingResult.currentWordIndex >= currentWords.length * 0.9 ||
+                            matchingResult.highlightedWords.length >= currentWords.length * 0.8
+    
     // Show feedback for final results
     if (isFinal) {
       if (feedback.overallScore >= 90) {
@@ -192,13 +229,6 @@ export default function RecitationPage() {
           title: 'Excellent Recitation!',
           description: `${feedback.overallScore}% accuracy. ${feedback.feedback[0]}`
         })
-        
-        // Auto-advance if verse is completed
-        if (matchingResult.currentWordIndex >= currentWords.length * 0.8) {
-          setTimeout(() => {
-            handleNextVerse()
-          }, 2000)
-        }
       } else if (feedback.overallScore >= 70) {
         addToast({
           type: 'warning',
@@ -211,6 +241,19 @@ export default function RecitationPage() {
           title: 'Keep Practicing!',
           description: `${feedback.overallScore}% accuracy. ${feedback.suggestions[0]}`
         })
+      }
+      
+      // Auto-advance if verse is completed (even if accuracy is low)
+      if (isVerseCompleted) {
+        addToast({
+          type: 'info',
+          title: 'Verse Completed',
+          description: 'Moving to next verse automatically...'
+        })
+        
+        setTimeout(() => {
+          handleNextVerse()
+        }, 2000)
       }
     }
     

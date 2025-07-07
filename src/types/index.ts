@@ -9,6 +9,11 @@ export interface QuranVerse {
   translation: string
   audioUrl?: string
   tajweedRules?: TajweedRule[]
+  words?: {
+    arabic: string
+    transliteration: string
+    translation: string
+  }[]
 }
 
 export interface QuranWord {
