@@ -398,7 +398,18 @@ export function SimpleQuranReciter() {
     const normalizedSpoken = cleanArabicText(spoken.trim())
     const normalizedExpected = cleanArabicText(expected.trim())
     
-    console.log(`🔍 Comparing: "${normalizedSpoken}" vs "${normalizedExpected}"`)
+    console.log(`🔍 Original texts:`)
+    console.log(`   Spoken: "${spoken.trim()}"`)
+    console.log(`   Expected: "${expected.trim()}"`)
+    console.log(`🔍 After normalization:`)
+    console.log(`   Spoken: "${normalizedSpoken}"`)
+    console.log(`   Expected: "${normalizedExpected}"`)
+    
+    // Quick check: if they're exactly the same after normalization, it's 100%
+    if (normalizedSpoken === normalizedExpected) {
+      console.log(`✅ EXACT MATCH after normalization - 100%`)
+      return 100
+    }
     
     // Strict validation: Check if the spoken text contains the complete expected verse
     // The spoken text should include all major words from the expected verse
@@ -413,18 +424,24 @@ export function SimpleQuranReciter() {
     let foundWords = 0
     let totalExpectedWords = expectedWords.length
     
-    expectedWords.forEach(expectedWord => {
+    expectedWords.forEach((expectedWord, index) => {
       // Check if this expected word (or very similar) appears in spoken text
-      const found = spokenWords.some(spokenWord => {
+      let bestMatch = 0
+      let bestMatchWord = ''
+      
+      spokenWords.forEach(spokenWord => {
         const wordSimilarity = calculateSimilarity(spokenWord, expectedWord)
-        return wordSimilarity >= 85 // High threshold for individual words
+        if (wordSimilarity > bestMatch) {
+          bestMatch = wordSimilarity
+          bestMatchWord = spokenWord
+        }
       })
       
-      if (found) {
+      if (bestMatch >= 85) {
         foundWords++
-        console.log(`✅ Found word match: "${expectedWord}"`)
+        console.log(`✅ Found word match: "${expectedWord}" ≈ "${bestMatchWord}" (${bestMatch}%)`)
       } else {
-        console.log(`❌ Missing word: "${expectedWord}"`)
+        console.log(`❌ Missing word: "${expectedWord}" (best match: "${bestMatchWord}" at ${bestMatch}%)`)
       }
     })
     
@@ -436,15 +453,16 @@ export function SimpleQuranReciter() {
     const extraWordsRatio = spokenWords.length / expectedWords.length
     console.log(`📏 Length ratio: ${extraWordsRatio.toFixed(2)} (spoken/expected)`)
     
-    // Strict requirements:
-    // 1. Must have at least 90% of expected words
-    // 2. Shouldn't be more than 150% longer than expected (some extra words allowed)
-    // 3. Overall similarity should also be decent
-    
+    // Calculate overall string similarity
     const overallSimilarity = calculateSimilarity(normalizedSpoken, normalizedExpected)
     console.log(`🎯 Overall similarity: ${overallSimilarity}%`)
     
-    if (wordCoverage >= 90 && extraWordsRatio <= 1.5 && overallSimilarity >= 70) {
+    // More lenient requirements for correct pronunciation:
+    // 1. Must have at least 85% of expected words (reduced from 90%)
+    // 2. Shouldn't be more than 150% longer than expected  
+    // 3. Overall similarity should be at least 60% (reduced from 70%)
+    
+    if (wordCoverage >= 85 && extraWordsRatio <= 1.5 && overallSimilarity >= 60) {
       const finalScore = Math.min(wordCoverage, overallSimilarity)
       console.log(`✅ PASSED strict validation with score: ${finalScore}%`)
       return finalScore

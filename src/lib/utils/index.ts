@@ -190,11 +190,34 @@ export function isArabicText(text: string): boolean {
 }
 
 /**
- * Clean Arabic text (remove diacritics for comparison)
+ * Clean Arabic text (remove diacritics and normalize for comparison)
  */
 export function cleanArabicText(text: string): string {
-  // Remove diacritics (harakat) for comparison
-  return text.replace(/[\u064B-\u065F\u0670\u06D6-\u06ED]/g, '')
+  let cleaned = text
+  
+  // Remove all diacritics (harakat) - comprehensive range
+  cleaned = cleaned.replace(/[\u064B-\u065F\u0670\u06D6-\u06ED\u08D4-\u08E1\u08E3-\u08FF\uFE70-\uFE7F]/g, '')
+  
+  // Normalize common Arabic character variations
+  cleaned = cleaned
+    // Normalize Alef variations
+    .replace(/[أإآا]/g, 'ا')
+    // Normalize Heh variations  
+    .replace(/[هة]/g, 'ه')
+    // Normalize Yeh variations
+    .replace(/[يىئ]/g, 'ي')
+    // Normalize Waw variations
+    .replace(/[ؤو]/g, 'و')
+    // Normalize Teh Marbuta
+    .replace(/ة/g, 'ه')
+    // Remove Kashida (Arabic tatweel)
+    .replace(/ـ/g, '')
+    // Remove extra whitespace and normalize
+    .replace(/\s+/g, ' ')
+    .trim()
+    .toLowerCase()
+  
+  return cleaned
 }
 
 /**
