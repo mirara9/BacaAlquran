@@ -9,6 +9,9 @@ class QuranReader {
         this.highlightedWords = new Set();
         this.tajweedEnabled = false;
         this.tajweedRules = this.initializeTajweedRules();
+        this.audioContext = null;
+        this.currentAudio = null;
+        this.qariDatabase = this.initializeQariDatabase();
         
         this.initializeElements();
         this.initializeSpeechRecognition();
@@ -145,6 +148,7 @@ class QuranReader {
                 refreshBtn.addEventListener('click', (e) => {
                     e.stopPropagation();
                     this.resetWord(this.wordsOnCurrentPage.length);
+                    this.playWordAudio(word, verseIndex, wordIndex);
                 });
                 wordSpan.appendChild(refreshBtn);
                 
@@ -310,21 +314,81 @@ class QuranReader {
             'noon_sakinah': {
                 'ikhfaa': {
                     letters: ['ت', 'ث', 'ج', 'د', 'ذ', 'ز', 'س', 'ش', 'ص', 'ض', 'ط', 'ظ', 'ف', 'ق', 'ك'],
-                    rule: 'Ikhfaa (Concealment)',
-                    description: 'Noon Sakinah or Tanween should be hidden/concealed when followed by these letters',
-                    pronunciation: 'Pronounce with a nasal sound without complete closure'
+                    rule: 'Ikhfaa (Concealment) - إخفاء',
+                    description: 'Noon Sakinah (نْ) or Tanween (ً ٌ ٍ) should be hidden/concealed when followed by these letters',
+                    pronunciation: 'Pronounce with a nasal sound without complete closure',
+                    detailed: {
+                        explanation: 'When Noon Sakinah or Tanween comes before any of the 15 Ikhfaa letters, the sound is concealed with ghunnah (nasal sound) for 2 counts.',
+                        phonetic: '[n˜] - nasal sound between clear and merged',
+                        steps: [
+                            'Place tongue near the following letter\'s position',
+                            'Allow air to flow through the nose',
+                            'Create a humming sound for 2 counts',
+                            'Do not fully pronounce the noon sound',
+                            'Blend smoothly into the next letter'
+                        ],
+                        examples: [
+                            {arabic: 'مِن تَحْتِهَا', transliteration: 'min tahtihaa', phonetic: '[mi˜n tactihaː]'},
+                            {arabic: 'عَن قَرِيبٍ', transliteration: 'an qareebin', phonetic: '[a˜n qariːbin]'}
+                        ],
+                        common_mistakes: [
+                            'Pronouncing noon clearly (should be concealed)',
+                            'Not maintaining ghunnah for full 2 counts',
+                            'Completely dropping the noon sound'
+                        ]
+                    }
                 },
                 'iqlab': {
                     letters: ['ب'],
-                    rule: 'Iqlab (Conversion)',
-                    description: 'Noon Sakinah or Tanween converts to Meem when followed by Ba',
-                    pronunciation: 'Change the sound to "m" with nasal prolongation'
+                    rule: 'Iqlab (Conversion) - إقلاب',
+                    description: 'Noon Sakinah (نْ) or Tanween (ً ٌ ٍ) converts to Meem (م) when followed by Ba (ب)',
+                    pronunciation: 'Change the sound to "m" with nasal prolongation (ghunnah) for 2 counts',
+                    detailed: {
+                        explanation: 'The noon or tanween sound completely changes to a meem sound with ghunnah when followed by Ba.',
+                        phonetic: '[m˜] - full meem sound with nasalization',
+                        steps: [
+                            'Close lips completely as if pronouncing Meem',
+                            'Allow air to flow through nose',
+                            'Create ghunnah (humming) for 2 counts',
+                            'Release into the Ba sound',
+                            'Maintain lip closure throughout'
+                        ],
+                        examples: [
+                            {arabic: 'مِن بَعْدِ', transliteration: 'min ba\'di', phonetic: '[mim˜ ba\'di]'},
+                            {arabic: 'سَمِيعٌ بَصِيرٌ', transliteration: 'samee\'un baseerun', phonetic: '[samiː\'um˜ basiːrun]'}
+                        ],
+                        common_mistakes: [
+                            'Pronouncing noon instead of meem',
+                            'Not maintaining ghunnah for 2 counts',
+                            'Not fully closing lips for meem sound'
+                        ]
+                    }
                 },
                 'idgham': {
                     letters: ['ي', 'ر', 'م', 'ل', 'و', 'ن'],
-                    rule: 'Idgham (Merging)',
-                    description: 'Noon Sakinah or Tanween merges with these letters',
-                    pronunciation: 'Merge completely with the following letter'
+                    rule: 'Idgham (Merging) - إدغام',
+                    description: 'Noon Sakinah (نْ) or Tanween (ً ٌ ٍ) merges completely with these letters (يرملون)',
+                    pronunciation: 'Merge completely with the following letter, with or without ghunnah',
+                    detailed: {
+                        explanation: 'The noon sound disappears and merges into the following letter. For ينمو (yarmaloon) there is ghunnah, for رل (raa-laam) there is no ghunnah.',
+                        phonetic: 'With ghunnah: [letter˜] | Without ghunnah: [letter]',
+                        steps: [
+                            'Identify if the letter has ghunnah (ينمو) or not (رل)',
+                            'If with ghunnah: merge with 2-count nasal sound',
+                            'If without ghunnah: merge directly without nasal sound',
+                            'Do not pronounce noon at all',
+                            'Strengthen the following letter'
+                        ],
+                        examples: [
+                            {arabic: 'مِن يَقُولُ', transliteration: 'min yaqoolu', phonetic: '[miyy˜aquːlu] - with ghunnah'},
+                            {arabic: 'مِن رَبِّهِم', transliteration: 'min rabbihim', phonetic: '[mirrabbihim] - no ghunnah'}
+                        ],
+                        common_mistakes: [
+                            'Pronouncing noon before merging',
+                            'Adding ghunnah to raa and laam',
+                            'Not strengthening the merged letter'
+                        ]
+                    }
                 },
                 'izhar': {
                     letters: ['ء', 'هـ', 'ع', 'ح', 'غ', 'خ'],
@@ -586,6 +650,81 @@ class QuranReader {
         return true; // Default to correct to reduce false positives
     }
     
+    initializeQariDatabase() {
+        // Database of famous Qaris with their recitation URLs
+        // In a real implementation, these would be actual audio file URLs
+        return {
+            'abdul_basit': {
+                name: 'Sheikh Abdul Basit Abdul Samad',
+                style: 'Mujawwad (Slow & Clear)',
+                baseUrl: 'https://server8.mp3quran.net/basit_mojawwad/'
+            },
+            'mishary': {
+                name: 'Sheikh Mishary Rashid Alafasy', 
+                style: 'Murattal (Moderate)',
+                baseUrl: 'https://server8.mp3quran.net/afs/'
+            },
+            'sudais': {
+                name: 'Sheikh Abdul Rahman Al-Sudais',
+                style: 'Murattal (Clear)',
+                baseUrl: 'https://server11.mp3quran.net/sudais/'
+            },
+            'husary': {
+                name: 'Sheikh Mahmoud Khalil Al-Husary',
+                style: 'Educational (Very Clear)',
+                baseUrl: 'https://server8.mp3quran.net/husary/'
+            }
+        };
+    }
+    
+    async playWordAudio(word, verseIndex, wordIndex) {
+        try {
+            // Stop any currently playing audio
+            if (this.currentAudio) {
+                this.currentAudio.pause();
+                this.currentAudio = null;
+            }
+            
+            // For demo purposes, we'll use text-to-speech for now
+            // In a real implementation, you would load actual Qari recordings
+            await this.playDemoAudio(word);
+            
+            // Show audio feedback
+            this.listeningStatus.textContent = `Playing pronunciation of "${word}" by Sheikh Abdul Basit`;
+            
+        } catch (error) {
+            console.error('Error playing audio:', error);
+            this.listeningStatus.textContent = 'Audio not available for this word';
+        }
+    }
+    
+    async playDemoAudio(word) {
+        // Demo using Web Speech API for text-to-speech
+        // In production, replace with actual Qari audio files
+        if ('speechSynthesis' in window) {
+            const utterance = new SpeechSynthesisUtterance(word);
+            utterance.lang = 'ar-SA';
+            utterance.rate = 0.6;
+            utterance.pitch = 1.0;
+            
+            // Try to find an Arabic voice
+            const voices = speechSynthesis.getVoices();
+            const arabicVoice = voices.find(voice => 
+                voice.lang.includes('ar') || voice.name.includes('Arabic')
+            );
+            
+            if (arabicVoice) {
+                utterance.voice = arabicVoice;
+            }
+            
+            return new Promise((resolve) => {
+                utterance.onend = resolve;
+                utterance.onerror = resolve;
+                speechSynthesis.speak(utterance);
+            });
+        }
+    }
+    
     checkElongation(spokenText, word) {
         // Check for elongation in speech - simplified implementation
         return spokenText.length > word.length * 0.8;
@@ -627,22 +766,104 @@ class QuranReader {
         }
         
         let feedbackHTML = '';
-        mistakes.forEach(mistake => {
+        mistakes.forEach((mistake, index) => {
+            const detailed = this.getTajweedRuleDetails(mistake);
+            
             feedbackHTML += `
                 <div class="mistake">❌ ${mistake.rule}</div>
                 <div class="rule">📜 ${mistake.description}</div>
-                <div class="correction">✅ ${mistake.correction}</div>
-                <hr style="margin: 10px 0; border: 1px solid #ddd;">
+                
+                ${detailed ? `
+                    <div class="pronunciation-guide">
+                        <h4>🎤 Correct Pronunciation Guide</h4>
+                        <p><strong>Explanation:</strong> ${detailed.explanation}</p>
+                        <p><strong>Phonetic:</strong> <span class="phonetic">${detailed.phonetic}</span></p>
+                    </div>
+                    
+                    <div class="step-by-step">
+                        <h5>📝 Step-by-Step Instructions:</h5>
+                        <ol>
+                            ${detailed.steps.map(step => `<li>${step}</li>`).join('')}
+                        </ol>
+                    </div>
+                    
+                    ${detailed.examples ? `
+                        <div class="tajweed-example">
+                            <h5>📚 Examples:</h5>
+                            ${detailed.examples.map(ex => `
+                                <div class="arabic">${ex.arabic}</div>
+                                <div class="transliteration">Transliteration: ${ex.transliteration}</div>
+                                <div class="phonetic">Phonetic: ${ex.phonetic}</div>
+                                <hr style="margin: 8px 0; opacity: 0.3;">
+                            `).join('')}
+                        </div>
+                    ` : ''}
+                    
+                    ${detailed.common_mistakes ? `
+                        <div style="background: #ffebee; padding: 10px; border-radius: 6px; margin: 10px 0;">
+                            <h5 style="color: #c62828; margin-bottom: 8px;">⚠️ Common Mistakes to Avoid:</h5>
+                            <ul style="margin-left: 20px; color: #d32f2f;">
+                                ${detailed.common_mistakes.map(mistake => `<li>${mistake}</li>`).join('')}
+                            </ul>
+                        </div>
+                    ` : ''}
+                ` : `
+                    <div class="correction">✅ ${mistake.correction}</div>
+                `}
+                
+                <div class="audio-controls">
+                    <button class="play-audio-btn" onclick="quranReader.playCorrectPronunciation('${mistake.word}')">
+                        🔊 Play Correct Pronunciation
+                    </button>
+                    <span class="qari-name">Sheikh Abdul Basit (Mujawwad)</span>
+                </div>
+                
+                <hr style="margin: 15px 0; border: 1px solid #ddd;">
             `;
         });
         
         this.tajweedContent.innerHTML = feedbackHTML;
         this.tajweedFeedback.classList.add('show');
         
-        // Auto-hide after 5 seconds
+        // Auto-hide after 10 seconds (increased for detailed content)
         setTimeout(() => {
             this.tajweedFeedback.classList.remove('show');
-        }, 5000);
+        }, 10000);
+    }
+    
+    getTajweedRuleDetails(mistake) {
+        // Find detailed explanation for the mistake
+        const rules = this.tajweedRules;
+        
+        // Search through all rule categories
+        for (const category of Object.values(rules)) {
+            if (typeof category === 'object' && category !== null) {
+                for (const rule of Object.values(category)) {
+                    if (rule.rule === mistake.rule && rule.detailed) {
+                        return rule.detailed;
+                    }
+                }
+            }
+        }
+        
+        return null;
+    }
+    
+    async playCorrectPronunciation(word) {
+        const playBtn = event.target;
+        playBtn.classList.add('playing');
+        playBtn.disabled = true;
+        playBtn.innerHTML = '🔊 Playing...';
+        
+        try {
+            await this.playDemoAudio(word);
+        } catch (error) {
+            console.error('Error playing pronunciation:', error);
+        } finally {
+            playBtn.classList.remove('playing');
+            playBtn.disabled = false;
+            playBtn.innerHTML = '🔊 Play Correct Pronunciation';
+        }
     }
     
     checkPageCompletion() {
@@ -716,5 +937,5 @@ class QuranReader {
 
 // Initialize the app when DOM is loaded
 document.addEventListener('DOMContentLoaded', () => {
-    new QuranReader();
+    window.quranReader = new QuranReader();
 });

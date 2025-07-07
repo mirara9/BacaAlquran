@@ -250,6 +250,115 @@ main {
     font-weight: bold;
 }
 
+.pronunciation-guide {
+    background: #e8f5e8;
+    border: 1px solid #4caf50;
+    border-radius: 8px;
+    padding: 12px;
+    margin: 10px 0;
+}
+
+.pronunciation-guide h4 {
+    color: #2e7d32;
+    margin-bottom: 8px;
+    font-size: 1em;
+}
+
+.phonetic {
+    font-family: 'Courier New', monospace;
+    background: #f5f5f5;
+    padding: 4px 8px;
+    border-radius: 4px;
+    font-weight: bold;
+    color: #d32f2f;
+}
+
+.audio-controls {
+    display: flex;
+    gap: 10px;
+    align-items: center;
+    margin-top: 10px;
+}
+
+.play-audio-btn {
+    background: #4caf50;
+    color: white;
+    border: none;
+    border-radius: 20px;
+    padding: 8px 16px;
+    cursor: pointer;
+    font-size: 0.9em;
+    display: flex;
+    align-items: center;
+    gap: 5px;
+    transition: all 0.3s ease;
+}
+
+.play-audio-btn:hover {
+    background: #45a049;
+    transform: translateY(-1px);
+}
+
+.play-audio-btn:disabled {
+    background: #ccc;
+    cursor: not-allowed;
+}
+
+.play-audio-btn.playing {
+    background: #ff9800;
+    animation: pulse 1s infinite;
+}
+
+.qari-name {
+    font-size: 0.8em;
+    color: #666;
+    font-style: italic;
+}
+
+.tajweed-example {
+    background: #fff3e0;
+    border-left: 4px solid #ff9800;
+    padding: 10px;
+    margin: 8px 0;
+    border-radius: 4px;
+}
+
+.tajweed-example .arabic {
+    font-size: 1.2em;
+    direction: rtl;
+    text-align: right;
+    margin-bottom: 5px;
+    color: #e65100;
+    font-weight: bold;
+}
+
+.tajweed-example .transliteration {
+    font-style: italic;
+    color: #bf360c;
+    margin-bottom: 3px;
+}
+
+.step-by-step {
+    background: #f3e5f5;
+    border-radius: 8px;
+    padding: 12px;
+    margin: 10px 0;
+}
+
+.step-by-step h5 {
+    color: #6a1b9a;
+    margin-bottom: 8px;
+}
+
+.step-by-step ol {
+    margin-left: 20px;
+}
+
+.step-by-step li {
+    margin-bottom: 5px;
+    color: #4a148c;
+}
+
 .tajweed-toggle {
     margin-left: 10px;
     background: #ff9800;
