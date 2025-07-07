@@ -95,25 +95,36 @@ export function SimpleQuranReciter() {
   const handleSpeechResult = useCallback((transcript: string) => {
     if (!transcript.trim()) return
 
-    console.log('🎤 Speech Result:', transcript)
+    console.log('🎤 Full Speech Result:', transcript)
     
-    const matches = findVerseMatches(transcript)
-    setMatches(matches)
+    // Split the transcript into potential verse segments
+    const verseSegments = extractVerseSegments(transcript)
+    console.log('📝 Extracted Verse Segments:', verseSegments)
     
-    // Update highlighting based on matches
-    const newHighlighted = new Set<number>()
-    const newIncorrect = new Set<number>()
+    // Process each segment against all verses
+    const newHighlighted = new Set(highlightedVerses)
+    const newIncorrect = new Set(incorrectVerses)
     
-    matches.forEach(match => {
-      if (match.isCorrect) {
-        newHighlighted.add(match.verseId)
-      } else if (match.similarity > 30) { // Partial match but incorrect
-        newIncorrect.add(match.verseId)
-      }
+    verseSegments.forEach(segment => {
+      const matches = findVerseMatches(segment.text)
+      
+      matches.forEach(match => {
+        if (match.isCorrect && match.similarity >= 80) {
+          newHighlighted.add(match.verseId)
+          newIncorrect.delete(match.verseId) // Remove from incorrect if now correct
+          console.log(`✅ Verse ${match.verseId} marked as correct (${match.similarity}%)`)
+        } else if (match.similarity > 50) {
+          if (!newHighlighted.has(match.verseId)) {
+            newIncorrect.add(match.verseId)
+            console.log(`❌ Verse ${match.verseId} marked as incorrect (${match.similarity}%)`)
+          }
+        }
+      })
     })
     
     setHighlightedVerses(newHighlighted)
     setIncorrectVerses(newIncorrect)
+    setMatches(verseSegments.flatMap(seg => findVerseMatches(seg.text)))
     
     // Auto-advance to next incomplete verse
     const nextIncompleteVerse = AL_FATIHA_VERSES.find(verse => 
@@ -124,21 +135,97 @@ export function SimpleQuranReciter() {
       setCurrentVerse(nextIncompleteVerse.id)
     }
     
-  }, [currentVerse])
+  }, [currentVerse, highlightedVerses, incorrectVerses])
 
-  // Process interim speech for real-time feedback
-  const processInterimSpeech = useCallback((interimText: string) => {
-    const matches = findVerseMatches(interimText, 50) // Lower threshold for interim
+  // Extract individual verse segments from continuous speech
+  const extractVerseSegments = (transcript: string): { text: string; startIndex: number }[] => {
+    const segments: { text: string; startIndex: number }[] = []
+    const normalizedTranscript = cleanArabicText(transcript.trim())
     
-    // Temporarily highlight potential matches
-    const potentialMatches = new Set<number>()
-    matches.forEach(match => {
-      if (match.similarity > 50) {
-        potentialMatches.add(match.verseId)
+    // Known verse patterns and key phrases for segmentation
+    const verseMarkers = [
+      'بسم الله', 'الحمد لله', 'الرحمن الرحيم', 'مالك يوم الدين', 
+      'اياك نعبد', 'اهدنا الصراط', 'صراط الذين'
+    ]
+    
+    // First, try to match complete verses
+    AL_FATIHA_VERSES.forEach(verse => {
+      const normalizedVerse = cleanArabicText(verse.arabic)
+      const verseWords = normalizedVerse.split(/\s+/)
+      
+      // Check if this verse appears in the transcript
+      for (let i = 0; i <= normalizedTranscript.length - normalizedVerse.length; i++) {
+        const segment = normalizedTranscript.substring(i, i + normalizedVerse.length)
+        const similarity = calculateSimilarity(segment, normalizedVerse)
+        
+        if (similarity >= 70) {
+          segments.push({
+            text: segment,
+            startIndex: i
+          })
+        }
+      }
+      
+      // Also check for partial matches (first few words of verse)
+      const firstHalf = verseWords.slice(0, Math.ceil(verseWords.length / 2)).join(' ')
+      const secondHalf = verseWords.slice(Math.ceil(verseWords.length / 2)).join(' ')
+      
+      if (normalizedTranscript.includes(firstHalf)) {
+        segments.push({
+          text: firstHalf,
+          startIndex: normalizedTranscript.indexOf(firstHalf)
+        })
+      }
+      
+      if (normalizedTranscript.includes(secondHalf)) {
+        segments.push({
+          text: secondHalf,
+          startIndex: normalizedTranscript.indexOf(secondHalf)
+        })
       }
     })
     
-    // Could add interim highlighting here if needed
+    // If no specific matches, split by common Arabic sentence patterns
+    if (segments.length === 0) {
+      const words = normalizedTranscript.split(/\s+/)
+      const segmentSize = Math.ceil(words.length / 3) // Split into roughly 3 segments
+      
+      for (let i = 0; i < words.length; i += segmentSize) {
+        const segmentWords = words.slice(i, i + segmentSize)
+        if (segmentWords.length > 0) {
+          segments.push({
+            text: segmentWords.join(' '),
+            startIndex: i
+          })
+        }
+      }
+    }
+    
+    // Remove duplicates and sort by position
+    const uniqueSegments = segments
+      .filter((segment, index, self) => 
+        self.findIndex(s => s.text === segment.text) === index
+      )
+      .sort((a, b) => a.startIndex - b.startIndex)
+    
+    return uniqueSegments.length > 0 ? uniqueSegments : [{ text: normalizedTranscript, startIndex: 0 }]
+  }
+
+  // Process interim speech for real-time feedback
+  const processInterimSpeech = useCallback((interimText: string) => {
+    const segments = extractVerseSegments(interimText)
+    
+    // Process each segment for potential matches
+    segments.forEach(segment => {
+      const matches = findVerseMatches(segment.text, 50) // Lower threshold for interim
+      
+      // Could add interim highlighting here if needed
+      matches.forEach(match => {
+        if (match.similarity > 60) {
+          console.log(`🔄 Interim match: Verse ${match.verseId} (${match.similarity}%)`)
+        }
+      })
+    })
   }, [])
 
   // Find which verses match the spoken text
@@ -288,18 +375,33 @@ export function SimpleQuranReciter() {
         </CardContent>
       </Card>
 
-      {/* Quran Text */}
-      <div className="space-y-4">
-        {AL_FATIHA_VERSES.map((verse) => (
-          <motion.div
-            key={verse.id}
-            initial={{ opacity: 0, y: 20 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ delay: verse.id * 0.1 }}
-          >
-            <Card className={`transition-all duration-300 ${getVerseStatusColor(verse.id)}`}>
-              <CardContent className="p-6">
-                <div className="flex items-start justify-between mb-4">
+      {/* Combined Quran Text - All Verses in One Section */}
+      <Card className="overflow-hidden">
+        <CardHeader className="bg-gradient-to-r from-green-50 to-emerald-50 border-b">
+          <CardTitle className="text-xl font-semibold text-green-800 text-center">
+            سُورَةُ الْفَاتِحَة - Al-Fatiha
+          </CardTitle>
+        </CardHeader>
+        <CardContent className="p-8">
+          <div className="space-y-6">
+            {AL_FATIHA_VERSES.map((verse) => (
+              <motion.div
+                key={verse.id}
+                initial={{ opacity: 0, y: 20 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ delay: verse.id * 0.05 }}
+                className={`transition-all duration-300 rounded-lg p-4 ${
+                  highlightedVerses.has(verse.id) 
+                    ? 'bg-green-100 border-l-4 border-green-500' 
+                    : incorrectVerses.has(verse.id)
+                    ? 'bg-red-100 border-l-4 border-red-500'
+                    : verse.id === currentVerse
+                    ? 'bg-blue-50 border-l-4 border-blue-400'
+                    : 'bg-gray-50 border-l-4 border-gray-300'
+                }`}
+              >
+                {/* Verse Header */}
+                <div className="flex items-center justify-between mb-4">
                   <div className="flex items-center space-x-3">
                     <div className="w-8 h-8 bg-green-700 text-white rounded-full flex items-center justify-center text-sm font-bold">
                       {verse.id}
@@ -315,46 +417,42 @@ export function SimpleQuranReciter() {
                   </div>
                   
                   {highlightedVerses.has(verse.id) && (
-                    <div className="text-green-600 text-sm font-medium">
-                      ✓ Correct
+                    <div className="text-green-600 text-sm font-medium flex items-center">
+                      <span className="text-green-500 mr-1">✓</span> Correct
                     </div>
                   )}
                   
                   {incorrectVerses.has(verse.id) && (
-                    <div className="text-red-600 text-sm font-medium">
-                      ✗ Needs Practice
+                    <div className="text-red-600 text-sm font-medium flex items-center">
+                      <span className="text-red-500 mr-1">✗</span> Needs Practice
                     </div>
                   )}
                 </div>
 
-                {/* Arabic Text - Uthmani Script */}
-                <div className="text-right mb-4" dir="rtl">
-                  <p className="text-3xl leading-loose font-arabic uthmani-font" style={{
+                {/* Arabic Text - Much Bigger */}
+                <div className="text-right mb-3" dir="rtl">
+                  <p className="text-5xl leading-relaxed font-arabic uthmani-font" style={{
                     fontFamily: 'Amiri Quran, KFGQPC Uthman Taha Naskh, Times New Roman, serif',
-                    lineHeight: '2.5'
+                    lineHeight: '1.8'
                   }}>
                     {verse.arabic}
                   </p>
                 </div>
 
-                {/* Transliteration */}
-                <div className="mb-3">
-                  <p className="text-lg text-gray-700 italic text-center">
+                {/* Transliteration and Translation - Much Smaller */}
+                <div className="space-y-1">
+                  <p className="text-sm text-gray-600 italic text-center">
                     {verse.transliteration}
                   </p>
-                </div>
-
-                {/* Translation */}
-                <div>
-                  <p className="text-gray-800 text-center">
+                  <p className="text-sm text-gray-700 text-center">
                     {verse.translation}
                   </p>
                 </div>
-              </CardContent>
-            </Card>
-          </motion.div>
-        ))}
-      </div>
+              </motion.div>
+            ))}
+          </div>
+        </CardContent>
+      </Card>
 
       {/* Real-time Feedback */}
       {speechRecognition.transcript && (
@@ -379,12 +477,23 @@ export function SimpleQuranReciter() {
 
             {matches.length > 0 && (
               <div className="space-y-2">
-                <p className="font-medium text-blue-800">Recognition Results:</p>
-                {matches.slice(0, 3).map((match, index) => (
-                  <div key={index} className="flex justify-between items-center text-sm">
-                    <span>Verse {match.verseId}</span>
-                    <span className={`font-medium ${match.isCorrect ? 'text-green-600' : 'text-orange-600'}`}>
-                      {match.similarity.toFixed(0)}% match
+                <p className="font-medium text-blue-800">Individual Verse Detection:</p>
+                {matches.slice(0, 5).map((match, index) => (
+                  <div key={index} className="flex justify-between items-center text-sm bg-white rounded p-2">
+                    <div className="flex items-center space-x-2">
+                      <span className="font-medium">Verse {match.verseId}:</span>
+                      <span className="text-gray-600">
+                        {AL_FATIHA_VERSES.find(v => v.id === match.verseId)?.arabic.substring(0, 20)}...
+                      </span>
+                    </div>
+                    <span className={`font-medium px-2 py-1 rounded text-xs ${
+                      match.isCorrect 
+                        ? 'bg-green-100 text-green-700' 
+                        : match.similarity > 50
+                        ? 'bg-orange-100 text-orange-700'
+                        : 'bg-red-100 text-red-700'
+                    }`}>
+                      {match.similarity.toFixed(0)}%
                     </span>
                   </div>
                 ))}
