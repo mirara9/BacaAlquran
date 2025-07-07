@@ -66,8 +66,18 @@ export function SimpleQuranReciter() {
   const [incorrectVerses, setIncorrectVerses] = useState<Set<number>>(new Set())
   const [isListening, setIsListening] = useState(false)
   const [matches, setMatches] = useState<RecitationMatch[]>([])
+  const [silenceTimeout, setSilenceTimeout] = useState<NodeJS.Timeout | null>(null)
 
   const { speak } = useTextToSpeech()
+
+  // Cleanup timeout on unmount
+  useEffect(() => {
+    return () => {
+      if (silenceTimeout) {
+        clearTimeout(silenceTimeout)
+      }
+    }
+  }, [silenceTimeout])
 
   // Speech recognition with chunked processing
   const speechRecognition = useRealtimeSpeechRecognition({
@@ -77,43 +87,76 @@ export function SimpleQuranReciter() {
     onResult: (result) => {
       const fullTranscript = result.transcript.trim()
       console.log('🎤 Full transcript received:', fullTranscript)
+      
+      // Clear any existing silence timeout since we have new speech
+      if (silenceTimeout) {
+        clearTimeout(silenceTimeout)
+        setSilenceTimeout(null)
+      }
+      
       handleSpeechResult(fullTranscript)
+      
+      // Set a 1-second timeout to clear transcript after silence
+      const newTimeout = setTimeout(() => {
+        clearTranscriptForNewAttempt()
+      }, 1000)
+      setSilenceTimeout(newTimeout)
     },
     onInterimResult: (interimText) => {
       // Process interim results for real-time highlighting
       if (interimText.trim()) {
+        // Clear existing timeout since we have ongoing speech
+        if (silenceTimeout) {
+          clearTimeout(silenceTimeout)
+          setSilenceTimeout(null)
+        }
         processInterimSpeech(interimText)
       }
     },
     onStart: () => {
       setIsListening(true)
+      // Clear any existing timeouts when starting
+      if (silenceTimeout) {
+        clearTimeout(silenceTimeout)
+        setSilenceTimeout(null)
+      }
     },
-    onEnd: () => setIsListening(false),
+    onEnd: () => {
+      setIsListening(false)
+      // Clear timeout when stopping
+      if (silenceTimeout) {
+        clearTimeout(silenceTimeout)
+        setSilenceTimeout(null)
+      }
+    },
     onError: (error) => {
       console.error('Speech recognition error:', error)
       setIsListening(false)
+      if (silenceTimeout) {
+        clearTimeout(silenceTimeout)
+        setSilenceTimeout(null)
+      }
     }
   })
 
-  // Advance to next verse and clear speech recognition
+  // Clear transcript and reset for new verse attempt
+  const clearTranscriptForNewAttempt = useCallback(() => {
+    if (silenceTimeout) {
+      clearTimeout(silenceTimeout)
+      setSilenceTimeout(null)
+    }
+    
+    speechRecognition.clearTranscript()
+    console.log('🧹 Cleared transcript after silence - ready for new verse attempt')
+  }, [silenceTimeout, speechRecognition])
+
+  // Advance to next verse and preserve highlights
   const advanceToNextVerse = useCallback((nextVerseId: number) => {
     console.log(`🔄 Advancing from verse ${currentVerse} to verse ${nextVerseId}`)
     setCurrentVerse(nextVerseId)
-    
-    // Stop and restart speech recognition to clear the transcript
-    if (speechRecognition.isListening) {
-      speechRecognition.stopListening()
-      setTimeout(() => {
-        speechRecognition.clearTranscript()
-        speechRecognition.startListening()
-        console.log('🧹 Restarted speech recognition for new verse')
-      }, 100)
-    } else {
-      speechRecognition.clearTranscript()
-    }
-    
+    clearTranscriptForNewAttempt() // Clear transcript for fresh start
     console.log('🧹 Advanced to new verse (preserved highlights)')
-  }, [currentVerse, speechRecognition])
+  }, [currentVerse, clearTranscriptForNewAttempt])
 
   // Process final speech recognition results
   const handleSpeechResult = useCallback((transcript: string) => {
@@ -363,6 +406,12 @@ export function SimpleQuranReciter() {
     setMatches([])
     setCurrentVerse(1)
     speechRecognition.clearTranscript()
+    
+    // Clear any existing timeout
+    if (silenceTimeout) {
+      clearTimeout(silenceTimeout)
+      setSilenceTimeout(null)
+    }
   }
 
   const getVerseStatusColor = (verseId: number) => {
