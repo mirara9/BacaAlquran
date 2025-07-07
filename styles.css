@@ -124,6 +124,36 @@ main {
     color: white;
     box-shadow: 0 2px 5px rgba(244, 67, 54, 0.4);
     animation: shake 0.5s ease-in-out;
+    position: relative;
+}
+
+.word-refresh {
+    position: absolute;
+    top: -8px;
+    right: -8px;
+    width: 20px;
+    height: 20px;
+    background: #2196F3;
+    color: white;
+    border: none;
+    border-radius: 50%;
+    font-size: 12px;
+    cursor: pointer;
+    display: none;
+    align-items: center;
+    justify-content: center;
+    z-index: 10;
+    transition: all 0.2s ease;
+}
+
+.word-refresh:hover {
+    background: #1976D2;
+    transform: scale(1.1);
+}
+
+.word.highlighted .word-refresh,
+.word.incorrect .word-refresh {
+    display: flex;
 }
 
 @keyframes shake {

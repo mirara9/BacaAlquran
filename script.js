@@ -137,6 +137,17 @@ class QuranReader {
                 wordSpan.dataset.wordIndex = wordIndex;
                 wordSpan.dataset.globalIndex = this.wordsOnCurrentPage.length;
                 
+                // Add refresh button
+                const refreshBtn = document.createElement('button');
+                refreshBtn.className = 'word-refresh';
+                refreshBtn.innerHTML = '↻';
+                refreshBtn.title = 'Re-read this word';
+                refreshBtn.addEventListener('click', (e) => {
+                    e.stopPropagation();
+                    this.resetWord(this.wordsOnCurrentPage.length);
+                });
+                wordSpan.appendChild(refreshBtn);
+                
                 this.wordsOnCurrentPage.push({
                     element: wordSpan,
                     text: word,
@@ -521,17 +532,28 @@ class QuranReader {
         const qalqalahLetters = this.tajweedRules.qalqalah.letters;
         
         for (const letter of qalqalahLetters) {
-            if (word.includes(letter)) {
-                const hasQalqalah = this.checkQalqalahPronunciation(spokenText, letter);
-                if (!hasQalqalah) {
-                    mistakes.push({
-                        type: 'qalqalah',
-                        rule: this.tajweedRules.qalqalah.rule,
-                        description: this.tajweedRules.qalqalah.description,
-                        correction: this.tajweedRules.qalqalah.pronunciation,
-                        word: word,
-                        letter: letter
-                    });
+            // Check if the letter has sukun (is followed by sukun mark or is at the end)
+            const letterIndex = word.indexOf(letter);
+            if (letterIndex !== -1) {
+                const nextChar = word.charAt(letterIndex + 1);
+                const hasSukun = nextChar === '\u0652' || // sukun mark
+                                letterIndex === word.length - 1 || // end of word
+                                nextChar === '' || // also end of word
+                                /\s/.test(nextChar); // followed by space
+                
+                // Only check qalqalah if the letter actually has sukun
+                if (hasSukun) {
+                    const hasQalqalah = this.checkQalqalahPronunciation(spokenText, letter);
+                    if (!hasQalqalah) {
+                        mistakes.push({
+                            type: 'qalqalah',
+                            rule: this.tajweedRules.qalqalah.rule,
+                            description: `Letter ${letter} should echo when it has sukun`,
+                            correction: this.tajweedRules.qalqalah.pronunciation,
+                            word: word,
+                            letter: letter
+                        });
+                    }
                 }
             }
         }
@@ -540,22 +562,28 @@ class QuranReader {
     }
     
     checkPronunciationPattern(spokenText, rule) {
-        // Simplified check - in a real implementation, this would use 
-        // advanced audio analysis and phonetic comparison
+        // More lenient check to reduce false positives
+        // In a real implementation, this would use advanced audio analysis
+        
+        // For now, be very lenient and only flag obvious issues
         const duration = spokenText.length;
         const hasNasalSound = spokenText.includes('n') || spokenText.includes('m');
         
+        // Most rules default to correct unless there's a clear issue
         if (rule.rule.includes('Ikhfaa')) {
-            return hasNasalSound && duration > 3;
+            // Only flag if completely missing nasal sound and very short
+            return hasNasalSound || duration > 2;
         }
         if (rule.rule.includes('Idgham')) {
-            return duration > 2;
+            // Only flag if extremely short
+            return duration > 1;
         }
         if (rule.rule.includes('Iqlab')) {
-            return spokenText.includes('m') || hasNasalSound;
+            // Only flag if no nasal sound at all
+            return hasNasalSound || duration > 2;
         }
         
-        return true; // Default to correct for basic implementation
+        return true; // Default to correct to reduce false positives
     }
     
     checkElongation(spokenText, word) {
@@ -564,8 +592,32 @@ class QuranReader {
     }
     
     checkQalqalahPronunciation(spokenText, letter) {
-        // Simplified check for qalqalah bounce
-        return spokenText.includes(letter) && spokenText.length > 2;
+        // More lenient check for qalqalah bounce - assume correct unless clearly wrong
+        // In a real implementation, this would analyze audio for the bounce effect
+        return true; // Default to correct for now to reduce false positives
+    }
+    
+    resetWord(wordIndex) {
+        if (wordIndex >= 0 && wordIndex < this.wordsOnCurrentPage.length) {
+            const wordData = this.wordsOnCurrentPage[wordIndex];
+            
+            // Remove highlighting and incorrect classes
+            wordData.element.classList.remove('highlighted', 'incorrect', 'current');
+            
+            // Remove from highlighted words set
+            this.highlightedWords.delete(wordIndex);
+            
+            // Hide tajweed feedback
+            this.tajweedFeedback.classList.remove('show');
+            
+            // Update progress
+            this.updateProgress();
+            
+            // Update status
+            this.listeningStatus.textContent = `Word "${wordData.text}" reset. You can re-read it now.`;
+            
+            console.log('Word reset:', wordData.text);
+        }
     }
     
     showTajweedFeedback(mistakes) {
