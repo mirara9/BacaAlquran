@@ -662,9 +662,70 @@ class QuranReader {
         return true; // Default to correct to reduce false positives
     }
     
-    initializeQariDatabase() {
-        // TTS-based Qari simulation with different speech parameters
-        return {
+    getPhoneticPronunciation(arabicWord) {
+        // Phonetic English pronunciations for Arabic Quran words
+        const phoneticMap = {
+            // Al-Fatiha - Verse 1
+            'بِسْمِ': 'bis-mi',
+            'اللَّهِ': 'al-lah-hi',
+            'الرَّحْمَنِ': 'ar-rah-man-i',
+            'الرَّحِيمِ': 'ar-ra-heem',
+            
+            // Al-Fatiha - Verse 2
+            'الْحَمْدُ': 'al-ham-du',
+            'لِلَّهِ': 'lil-lah-hi',
+            'رَبِّ': 'rab-bi',
+            'الْعَالَمِينَ': 'al-ah-la-meen',
+            
+            // Al-Fatiha - Verse 3
+            // (الرَّحْمَنِ الرَّحِيمِ already mapped above)
+            
+            // Al-Fatiha - Verse 4
+            'مَالِكِ': 'ma-li-ki',
+            'يَوْمِ': 'yaw-mi',
+            'الدِّينِ': 'ad-deen',
+            
+            // Al-Fatiha - Verse 5
+            'إِيَّاكَ': 'iy-ya-ka',
+            'نَعْبُدُ': 'nah-bu-du',
+            'وَإِيَّاكَ': 'wa-iy-ya-ka',
+            'نَسْتَعِينُ': 'nas-ta-een',
+            
+            // Al-Fatiha - Verse 6
+            'اهْدِنَا': 'ih-di-na',
+            'الصِّرَاطَ': 'as-si-rat',
+            'الْمُسْتَقِيمَ': 'al-mus-ta-keem',
+            
+            // Al-Fatiha - Verse 7
+            'صِرَاطَ': 'si-rat',
+            'الَّذِينَ': 'al-la-dhee-na',
+            'أَنْعَمْتَ': 'an-am-ta',
+            'عَلَيْهِمْ': 'ah-lay-him',
+            'غَيْرِ': 'ghay-ri',
+            'الْمَغْضُوبِ': 'al-magh-doob',
+            'وَلَا': 'wa-la',
+            'الضَّالِّينَ': 'ad-dal-leen',
+            
+            // Common words
+            'الله': 'al-lah',
+            'محمد': 'mu-ham-mad',
+            'السلام': 'as-sa-lam',
+            'عليكم': 'ah-lay-kum',
+            'وعليكم': 'wa-ah-lay-kum',
+            'السلام عليكم': 'as-sa-la-mu ah-lay-kum',
+            
+            // Remove diacritics versions
+            'بسم': 'bis-mi',
+            'الله': 'al-lah',
+            'الرحمن': 'ar-rah-man',
+            'الرحيم': 'ar-ra-heem',
+            'الحمد': 'al-ham-du',
+            'لله': 'lil-lah',
+            'رب': 'rab-bi',
+            'العالمين': 'al-ah-la-meen'
+        };\n        
+        // Try exact match first
+        if (phoneticMap[arabicWord]) {\n            return phoneticMap[arabicWord];\n        }\n        \n        // Try normalized version (remove diacritics)\n        const normalized = this.normalizeArabicText(arabicWord);\n        if (phoneticMap[normalized]) {\n            return phoneticMap[normalized];\n        }\n        \n        // Return null if no phonetic mapping found\n        return null;\n    }\n    \n    initializeQariDatabase() {\n        // TTS-based Qari simulation with different speech parameters\n        return {
             'abdul_basit': {
                 name: 'Sheikh Abdul Basit Abdul Samad',
                 style: 'Mujawwad (Slow & Clear)',
@@ -985,19 +1046,37 @@ class QuranReader {
                 // Stop any current speech
                 speechSynthesis.cancel();
                 
-                const utterance = new SpeechSynthesisUtterance(word);
+                // Check if Arabic voices are available
+                const voices = speechSynthesis.getVoices();
+                const hasArabicVoice = voices.some(v => v.lang.includes('ar'));
+                
+                let textToSpeak = word;
+                let languageToUse = 'ar-SA';
+                
+                // If no Arabic voices, use phonetic English pronunciation
+                if (!hasArabicVoice) {
+                    const phoneticText = this.getPhoneticPronunciation(word);
+                    if (phoneticText) {
+                        textToSpeak = phoneticText;
+                        languageToUse = 'en-US';
+                        console.log(`No Arabic voice found, using phonetic: "${phoneticText}" for "${word}"`);
+                    }
+                }
+                
+                const utterance = new SpeechSynthesisUtterance(textToSpeak);
                 
                 // Configure using selected Qari's settings
                 const qariConfig = this.qariDatabase[this.selectedQari].ttsConfig;
-                utterance.lang = qariConfig.preferredLang;
-                utterance.rate = qariConfig.rate;
+                utterance.lang = hasArabicVoice ? qariConfig.preferredLang : languageToUse;
+                utterance.rate = qariConfig.rate * (hasArabicVoice ? 1 : 0.8); // Slightly slower for phonetic
                 utterance.pitch = qariConfig.pitch;
                 utterance.volume = qariConfig.volume;
                 
                 // Set up event handlers
                 utterance.onstart = () => {
-                    console.log(`TTS started for: ${word}`);
-                    this.listeningStatus.textContent = `🔊 Playing "${word}" by ${this.qariDatabase[this.selectedQari].name} (TTS)`;
+                    console.log(`TTS started for: ${word} (${hasArabicVoice ? 'Arabic voice' : 'Phonetic English'})`);
+                    const voiceType = hasArabicVoice ? 'Arabic voice' : 'phonetic pronunciation';
+                    this.listeningStatus.textContent = `🔊 Playing "${word}" using ${voiceType}`;
                 };
                 
                 utterance.onend = () => {
@@ -1008,9 +1087,9 @@ class QuranReader {
                 
                 utterance.onerror = (error) => {
                     console.error('TTS error:', error);
-                    this.listeningStatus.textContent = `TTS failed, trying beep sound...`;
-                    // Fallback to beep
-                    this.playBeepSound(440, 400).then(resolve).catch(resolve);
+                    this.listeningStatus.textContent = `TTS failed, playing musical tone...`;
+                    // Fallback to word-specific tone
+                    this.playWordTone(word).then(resolve).catch(resolve);
                 };
                 
                 // Enhanced voice selection
@@ -1018,27 +1097,40 @@ class QuranReader {
                     const voices = speechSynthesis.getVoices();
                     console.log(`Available voices: ${voices.length}`);
                     
-                    // Priority order for Arabic voices
-                    const voicePriority = [
-                        v => v.lang === 'ar-SA',
-                        v => v.lang === 'ar',
-                        v => v.lang.startsWith('ar-'),
-                        v => v.name.toLowerCase().includes('arabic'),
-                        v => v.name.toLowerCase().includes('saudi'),
-                        v => v.name.toLowerCase().includes('nural')
-                    ];
-                    
                     let selectedVoice = null;
-                    for (const criterion of voicePriority) {
-                        selectedVoice = voices.find(criterion);
-                        if (selectedVoice) break;
+                    
+                    if (hasArabicVoice) {
+                        // Priority order for Arabic voices
+                        const voicePriority = [
+                            v => v.lang === 'ar-SA',
+                            v => v.lang === 'ar',
+                            v => v.lang.startsWith('ar-'),
+                            v => v.name.toLowerCase().includes('arabic'),
+                            v => v.name.toLowerCase().includes('saudi'),
+                            v => v.name.toLowerCase().includes('nural')
+                        ];
+                        
+                        for (const criterion of voicePriority) {
+                            selectedVoice = voices.find(criterion);
+                            if (selectedVoice) break;
+                        }
+                    } else {
+                        // Find best English voice for phonetic pronunciation
+                        const englishVoices = voices.filter(v => 
+                            v.lang.startsWith('en-') || v.lang === 'en'
+                        );
+                        
+                        // Prefer US English, then UK English, then any English
+                        selectedVoice = englishVoices.find(v => v.lang === 'en-US') ||
+                                     englishVoices.find(v => v.lang === 'en-GB') ||
+                                     englishVoices[0];
                     }
                     
                     if (selectedVoice) {
                         utterance.voice = selectedVoice;
                         console.log(`Selected voice: ${selectedVoice.name} (${selectedVoice.lang})`);
                     } else {
-                        console.log('No Arabic voice found, using system default');
+                        console.log('Using system default voice');
                     }
                     
                     // Speak the word
@@ -1087,6 +1179,130 @@ class QuranReader {
         return this.playEnhancedTTS(word);
     }
     
+    async playWordTone(word) {
+        // Generate word-specific musical tone patterns
+        console.log(`Playing word-specific tone for: ${word}`);
+        
+        // Calculate tone pattern based on word characteristics
+        const wordHash = this.hashWord(word);
+        const baseFrequency = 220 + (wordHash % 400); // 220-620 Hz range
+        const syllableCount = this.estimateSyllables(word);
+        const toneDuration = Math.max(600, syllableCount * 300); // Longer words get longer tones
+        
+        try {
+            if (!this.audioContext) {
+                this.audioContext = new (window.AudioContext || window.webkitAudioContext)();
+            }
+            
+            if (this.audioContext.state === 'suspended') {
+                await this.audioContext.resume();
+            }
+            
+            // Create multiple oscillators for richer sound
+            const oscillators = [];
+            const gainNodes = [];
+            
+            for (let i = 0; i < syllableCount; i++) {
+                const oscillator = this.audioContext.createOscillator();
+                const gainNode = this.audioContext.createGain();
+                const filterNode = this.audioContext.createBiquadFilter();
+                
+                oscillator.connect(filterNode);
+                filterNode.connect(gainNode);
+                gainNode.connect(this.audioContext.destination);
+                
+                // Each syllable gets a slightly different frequency
+                const frequency = baseFrequency + (i * 55); // Musical fourth intervals
+                oscillator.frequency.setValueAtTime(frequency, this.audioContext.currentTime);
+                oscillator.type = 'sine';
+                
+                // Configure filter
+                filterNode.type = 'lowpass';
+                filterNode.frequency.setValueAtTime(frequency * 1.5, this.audioContext.currentTime);
+                
+                // Staggered timing for syllable effect
+                const startTime = this.audioContext.currentTime + (i * 0.2);
+                const duration = (toneDuration - i * 100) / 1000;
+                
+                // Envelope for each syllable
+                gainNode.gain.setValueAtTime(0, startTime);
+                gainNode.gain.linearRampToValueAtTime(0.08, startTime + 0.05);
+                gainNode.gain.linearRampToValueAtTime(0.04, startTime + duration * 0.7);
+                gainNode.gain.exponentialRampToValueAtTime(0.001, startTime + duration);
+                
+                oscillator.start(startTime);
+                oscillator.stop(startTime + duration);
+                
+                oscillators.push(oscillator);
+                gainNodes.push(gainNode);
+            }
+            
+            this.currentOscillator = oscillators[0]; // Store first for cleanup
+            this.listeningStatus.textContent = `🎶 Playing melodic tone for "${word}" (${syllableCount} syllables)`;
+            
+            return new Promise(resolve => {
+                let resolvedCount = 0;
+                const totalOscillators = oscillators.length;
+                
+                oscillators.forEach((osc, index) => {
+                    osc.onended = () => {
+                        resolvedCount++;
+                        if (resolvedCount === totalOscillators) {
+                            this.currentOscillator = null;
+                            this.listeningStatus.textContent = `✅ Finished melodic tone for "${word}"`;
+                            resolve();
+                        }
+                    };
+                });
+                
+                // Fallback timeout
+                setTimeout(() => {
+                    this.currentOscillator = null;
+                    resolve();
+                }, toneDuration + 500);
+            });
+            
+        } catch (error) {
+            console.error('Word tone generation error:', error);
+            // Fallback to simple beep
+            return this.playBeepSound(440, 400);
+        }
+    }
+    
+    hashWord(word) {
+        // Simple hash function to generate consistent but varied numbers for each word
+        let hash = 0;
+        for (let i = 0; i < word.length; i++) {
+            const char = word.charCodeAt(i);
+            hash = ((hash << 5) - hash) + char;
+            hash = hash & hash; // Convert to 32-bit integer
+        }
+        return Math.abs(hash);
+    }
+    
+    estimateSyllables(arabicWord) {
+        // Estimate syllable count for Arabic words based on vowel marks and structure
+        const normalizedWord = this.normalizeArabicText(arabicWord);
+        
+        // Count vowel markers and estimate syllables
+        const vowelMarkers = (arabicWord.match(/[\u064B-\u0652]/g) || []).length;
+        const letterCount = normalizedWord.length;
+        
+        // Heuristic: Most Arabic words have 1-4 syllables
+        let syllables;
+        if (letterCount <= 2) syllables = 1;
+        else if (letterCount <= 4) syllables = 2;
+        else if (letterCount <= 6) syllables = 3;
+        else syllables = 4;
+        
+        // Adjust based on vowel markers if present
+        if (vowelMarkers > 0) {
+            syllables = Math.max(syllables, Math.min(4, Math.ceil(vowelMarkers / 2)));
+        }
+        
+        return syllables;
+    }
+
     async playBeepSound(frequency = 440, duration = 300) {
         // Enhanced beep sound with better audio quality
         try {
