@@ -39,6 +39,9 @@ class QuranReader {
         this.tajweedFeedback = document.getElementById('tajweedFeedback');
         this.tajweedContent = document.getElementById('tajweedContent');
         this.qariSelector = document.getElementById('qariSelector');
+        this.audioStatus = document.getElementById('audioStatus');
+        this.audioStatusIcon = document.getElementById('audioStatusIcon');
+        this.audioStatusText = document.getElementById('audioStatusText');
     }
     
     initializeSpeechRecognition() {
@@ -765,25 +768,35 @@ class QuranReader {
     async initializeAudioSystem() {
         console.log('🎵 Initializing audio system...');
         
+        this.updateAudioStatus('🔧', 'Initializing audio system...', 'info');
+        
         // Test TTS availability
         if ('speechSynthesis' in window) {
             console.log('✅ Text-to-Speech available');
             
+            // Check for Arabic voices
+            const checkArabicVoices = () => {
+                const voices = speechSynthesis.getVoices();
+                console.log(`🎤 Loaded ${voices.length} TTS voices`);
+                const arabicVoices = voices.filter(v => v.lang.includes('ar'));
+                if (arabicVoices.length > 0) {
+                    console.log(`🔊 Found ${arabicVoices.length} Arabic voices:`, arabicVoices.map(v => v.name));
+                    this.updateAudioStatus('🔊', `Arabic TTS Ready (${arabicVoices.length} voices)`, 'arabic-tts');
+                } else {
+                    console.log('⚠️ No Arabic voices found - will use phonetic pronunciation');
+                    this.updateAudioStatus('🔤', 'Phonetic TTS Ready (No Arabic voices)', 'phonetic-tts');
+                }
+            };
+            
             // Preload voices
             if (speechSynthesis.getVoices().length === 0) {
-                speechSynthesis.onvoiceschanged = () => {
-                    const voices = speechSynthesis.getVoices();
-                    console.log(`🎤 Loaded ${voices.length} TTS voices`);
-                    const arabicVoices = voices.filter(v => v.lang.includes('ar'));
-                    if (arabicVoices.length > 0) {
-                        console.log(`🔊 Found ${arabicVoices.length} Arabic voices:`, arabicVoices.map(v => v.name));
-                    } else {
-                        console.log('⚠️ No Arabic voices found - will use default voice');
-                    }
-                };
+                speechSynthesis.onvoiceschanged = checkArabicVoices;
+            } else {
+                checkArabicVoices();
             }
         } else {
             console.log('❌ Text-to-Speech not available');
+            this.updateAudioStatus('🎵', 'Musical Tones Only (No TTS)', 'musical-tone');
             this.listeningStatus.textContent = '❌ Text-to-Speech not supported in this browser';
         }
         
@@ -793,6 +806,7 @@ class QuranReader {
             console.log(`✅ Web Audio API available (${this.audioContext.state})`);
         } catch (error) {
             console.log('❌ Web Audio API not available:', error);
+            this.updateAudioStatus('❌', 'Audio Not Available', 'error');
         }
         
         // Add user interaction requirement notice
@@ -801,6 +815,21 @@ class QuranReader {
         this.audioInitialized = true;
         console.log('✅ Audio system initialized successfully');
         this.listeningStatus.textContent = '🎵 Audio system ready - click any button to activate';
+    }
+    
+    updateAudioStatus(icon, text, type = 'info') {
+        if (this.audioStatusIcon && this.audioStatusText && this.audioStatus) {
+            this.audioStatusIcon.textContent = icon;
+            this.audioStatusText.textContent = text;
+            
+            // Remove all previous classes
+            this.audioStatus.className = 'audio-status';
+            
+            // Add new type class
+            if (type !== 'info') {
+                this.audioStatus.classList.add(type);
+            }
+        }
     }
     
     addAudioActivationListener() {
@@ -1060,7 +1089,12 @@ class QuranReader {
                         textToSpeak = phoneticText;
                         languageToUse = 'en-US';
                         console.log(`No Arabic voice found, using phonetic: "${phoneticText}" for "${word}"`);
+                        this.updateAudioStatus('🔤', 'Using Phonetic Pronunciation', 'phonetic-tts');
+                    } else {
+                        console.log(`No phonetic mapping found for "${word}"`);
                     }
+                } else {
+                    this.updateAudioStatus('🔊', 'Using Arabic Voice', 'arabic-tts');
                 }
                 
                 const utterance = new SpeechSynthesisUtterance(textToSpeak);
@@ -1182,6 +1216,7 @@ class QuranReader {
     async playWordTone(word) {
         // Generate word-specific musical tone patterns
         console.log(`Playing word-specific tone for: ${word}`);
+        this.updateAudioStatus('🎵', 'Generating Musical Tone', 'musical-tone');
         
         // Calculate tone pattern based on word characteristics
         const wordHash = this.hashWord(word);
