@@ -119,6 +119,19 @@ main {
     transform: scale(1.05);
 }
 
+.word.incorrect {
+    background: #f44336;
+    color: white;
+    box-shadow: 0 2px 5px rgba(244, 67, 54, 0.4);
+    animation: shake 0.5s ease-in-out;
+}
+
+@keyframes shake {
+    0%, 100% { transform: translateX(0); }
+    25% { transform: translateX(-2px); }
+    75% { transform: translateX(2px); }
+}
+
 .status-bar {
     background: #f0f0f0;
     border-radius: 10px;
@@ -165,6 +178,64 @@ main {
     border-left: 4px solid #4CAF50;
 }
 
+.tajweed-feedback {
+    background: #fff3cd;
+    border: 1px solid #ffeaa7;
+    border-radius: 10px;
+    padding: 15px;
+    margin-top: 20px;
+    display: none;
+}
+
+.tajweed-feedback.show {
+    display: block;
+    animation: slideIn 0.3s ease-out;
+}
+
+@keyframes slideIn {
+    from { opacity: 0; transform: translateY(-10px); }
+    to { opacity: 1; transform: translateY(0); }
+}
+
+.tajweed-feedback h3 {
+    color: #856404;
+    margin-bottom: 10px;
+    font-size: 1.1em;
+}
+
+.tajweed-feedback .mistake {
+    color: #d32f2f;
+    font-weight: bold;
+    margin-bottom: 8px;
+}
+
+.tajweed-feedback .rule {
+    color: #2e7d32;
+    font-style: italic;
+    margin-bottom: 8px;
+}
+
+.tajweed-feedback .correction {
+    color: #1976d2;
+    font-weight: bold;
+}
+
+.tajweed-toggle {
+    margin-left: 10px;
+    background: #ff9800;
+    color: white;
+    font-size: 0.9em;
+    padding: 8px 16px;
+}
+
+.tajweed-toggle:hover {
+    background: #f57c00;
+}
+
+.tajweed-toggle.active {
+    background: #4caf50;
+}
+
 @media (max-width: 768px) {
     .container {
         margin: 10px;
@@ -187,5 +258,9 @@ main {
     .quran-text {
         font-size: 1.2em;
         padding: 20px;
+    }
+    
+    .tajweed-feedback {
+        font-size: 0.9em;
     }
 }

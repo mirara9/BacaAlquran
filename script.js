@@ -7,6 +7,8 @@ class QuranReader {
         this.currentWordIndex = 0;
         this.wordsOnCurrentPage = [];
         this.highlightedWords = new Set();
+        this.tajweedEnabled = false;
+        this.tajweedRules = this.initializeTajweedRules();
         
         this.initializeElements();
         this.initializeSpeechRecognition();
@@ -24,6 +26,9 @@ class QuranReader {
         this.progressFill = document.getElementById('progressFill');
         this.currentPageSpan = document.getElementById('currentPage');
         this.totalPagesSpan = document.getElementById('totalPages');
+        this.tajweedToggle = document.getElementById('tajweedToggle');
+        this.tajweedFeedback = document.getElementById('tajweedFeedback');
+        this.tajweedContent = document.getElementById('tajweedContent');
     }
     
     initializeSpeechRecognition() {
@@ -88,6 +93,7 @@ class QuranReader {
         this.stopBtn.addEventListener('click', () => this.stopListening());
         this.nextPageBtn.addEventListener('click', () => this.nextPage());
         this.prevPageBtn.addEventListener('click', () => this.prevPage());
+        this.tajweedToggle.addEventListener('click', () => this.toggleTajweed());
     }
     
     startListening() {
@@ -136,6 +142,9 @@ class QuranReader {
                     text: word,
                     normalizedText: this.normalizeArabicText(word)
                 });
+                
+                // Clear any existing highlights
+                wordSpan.classList.remove('highlighted', 'incorrect', 'current');
                 
                 verseDiv.appendChild(wordSpan);
                 verseDiv.appendChild(document.createTextNode(' '));
@@ -208,7 +217,22 @@ class QuranReader {
             
             if (isMatch && !this.highlightedWords.has(i)) {
                 this.highlightedWords.add(i);
-                wordData.element.classList.add('highlighted');
+                
+                // Perform tajweed analysis if enabled
+                if (this.tajweedEnabled) {
+                    const mistakes = this.analyzeTajweed(spokenWord, wordData, i);
+                    if (mistakes.length > 0) {
+                        wordData.element.classList.add('incorrect');
+                        this.showTajweedFeedback(mistakes);
+                        console.log('❌ Tajweed mistakes found:', mistakes);
+                    } else {
+                        wordData.element.classList.add('highlighted');
+                        console.log('✓ Correct tajweed pronunciation');
+                    }
+                } else {
+                    wordData.element.classList.add('highlighted');
+                }
+                
                 console.log('✓ Highlighted word:', wordData.text, 'matched with:', spokenWord);
                 break;
             }
@@ -267,6 +291,306 @@ class QuranReader {
                (spokenRoot === textRoot || 
                 spokenRoot.includes(textRoot) || 
                 textRoot.includes(spokenRoot));
+    }
+    
+    initializeTajweedRules() {
+        return {
+            // Noon Sakinah and Tanween rules
+            'noon_sakinah': {
+                'ikhfaa': {
+                    letters: ['ت', 'ث', 'ج', 'د', 'ذ', 'ز', 'س', 'ش', 'ص', 'ض', 'ط', 'ظ', 'ف', 'ق', 'ك'],
+                    rule: 'Ikhfaa (Concealment)',
+                    description: 'Noon Sakinah or Tanween should be hidden/concealed when followed by these letters',
+                    pronunciation: 'Pronounce with a nasal sound without complete closure'
+                },
+                'iqlab': {
+                    letters: ['ب'],
+                    rule: 'Iqlab (Conversion)',
+                    description: 'Noon Sakinah or Tanween converts to Meem when followed by Ba',
+                    pronunciation: 'Change the sound to "m" with nasal prolongation'
+                },
+                'idgham': {
+                    letters: ['ي', 'ر', 'م', 'ل', 'و', 'ن'],
+                    rule: 'Idgham (Merging)',
+                    description: 'Noon Sakinah or Tanween merges with these letters',
+                    pronunciation: 'Merge completely with the following letter'
+                },
+                'izhar': {
+                    letters: ['ء', 'هـ', 'ع', 'ح', 'غ', 'خ'],
+                    rule: 'Izhar (Clear pronunciation)',
+                    description: 'Noon Sakinah or Tanween should be pronounced clearly',
+                    pronunciation: 'Pronounce clearly and distinctly'
+                }
+            },
+            // Meem Sakinah rules
+            'meem_sakinah': {
+                'ikhfaa': {
+                    letters: ['ب'],
+                    rule: 'Ikhfaa Shafawi (Labial concealment)',
+                    description: 'Meem Sakinah should be concealed when followed by Ba',
+                    pronunciation: 'Conceal with nasal sound using lips'
+                },
+                'idgham': {
+                    letters: ['م'],
+                    rule: 'Idgham Shafawi (Labial merging)',
+                    description: 'Meem Sakinah merges with another Meem',
+                    pronunciation: 'Merge with prolongation'
+                },
+                'izhar': {
+                    letters: ['ء', 'هـ', 'ع', 'ح', 'غ', 'خ', 'ت', 'ث', 'ج', 'د', 'ذ', 'ز', 'س', 'ش', 'ص', 'ض', 'ط', 'ظ', 'ف', 'ق', 'ك', 'ل', 'ن', 'و', 'ي', 'ر'],
+                    rule: 'Izhar Shafawi (Clear labial pronunciation)',
+                    description: 'Meem Sakinah should be pronounced clearly',
+                    pronunciation: 'Pronounce clearly using lips'
+                }
+            },
+            // Madd (Elongation) rules
+            'madd': {
+                'madd_tabii': {
+                    pattern: /[اوي][َُِ]/g,
+                    rule: 'Madd Tabii (Natural elongation)',
+                    description: 'Natural elongation for 2 counts',
+                    pronunciation: 'Elongate for 2 counts naturally'
+                },
+                'madd_munfasil': {
+                    pattern: /[اوي]\s+[ءأإ]/g,
+                    rule: 'Madd Munfasil (Separated elongation)',
+                    description: 'Elongation when hamza comes after alif/waw/ya in separate word',
+                    pronunciation: 'Elongate for 4-5 counts'
+                },
+                'madd_muttasil': {
+                    pattern: /[اوي][ءأإ]/g,
+                    rule: 'Madd Muttasil (Connected elongation)',
+                    description: 'Elongation when hamza comes after alif/waw/ya in same word',
+                    pronunciation: 'Elongate for 4-5 counts'
+                }
+            },
+            // Qalqalah (Echoing) rules
+            'qalqalah': {
+                'letters': ['ق', 'ط', 'ب', 'ج', 'د'],
+                'rule': 'Qalqalah (Echoing)',
+                'description': 'These letters should echo when they have sukun',
+                'pronunciation': 'Pronounce with a slight echo/bounce'
+            },
+            // Ghunnah (Nasal sound) rules
+            'ghunnah': {
+                'letters': ['ن', 'م'],
+                'rule': 'Ghunnah (Nasal sound)',
+                'description': 'Nasal sound for Noon and Meem with certain rules',
+                'pronunciation': 'Pronounce with nasal resonance'
+            }
+        };
+    }
+    
+    toggleTajweed() {
+        this.tajweedEnabled = !this.tajweedEnabled;
+        if (this.tajweedEnabled) {
+            this.tajweedToggle.textContent = 'Disable Tajweed';
+            this.tajweedToggle.classList.add('active');
+            this.listeningStatus.textContent = 'Tajweed mode enabled - Reading with pronunciation analysis';
+        } else {
+            this.tajweedToggle.textContent = 'Enable Tajweed';
+            this.tajweedToggle.classList.remove('active');
+            this.tajweedFeedback.classList.remove('show');
+            this.listeningStatus.textContent = 'Tajweed mode disabled';
+        }
+    }
+    
+    analyzeTajweed(spokenText, wordData, wordIndex) {
+        const mistakes = [];
+        const word = wordData.text;
+        const normalizedWord = wordData.normalizedText;
+        
+        // Check for Noon Sakinah/Tanween rules
+        if (word.includes('ن') || word.includes('ً') || word.includes('ٌ') || word.includes('ٍ')) {
+            const noonMistakes = this.checkNoonSakinahRules(spokenText, word, wordIndex);
+            mistakes.push(...noonMistakes);
+        }
+        
+        // Check for Meem Sakinah rules
+        if (word.includes('م')) {
+            const meemMistakes = this.checkMeemSakinahRules(spokenText, word, wordIndex);
+            mistakes.push(...meemMistakes);
+        }
+        
+        // Check for Madd rules
+        const maddMistakes = this.checkMaddRules(spokenText, word);
+        mistakes.push(...maddMistakes);
+        
+        // Check for Qalqalah
+        const qalqalahMistakes = this.checkQalqalahRules(spokenText, word);
+        mistakes.push(...qalqalahMistakes);
+        
+        return mistakes;
+    }
+    
+    checkNoonSakinahRules(spokenText, word, wordIndex) {
+        const mistakes = [];
+        const nextWord = wordIndex + 1 < this.wordsOnCurrentPage.length ? 
+            this.wordsOnCurrentPage[wordIndex + 1].text : '';
+        
+        if (nextWord) {
+            const firstLetter = nextWord.charAt(0);
+            const rules = this.tajweedRules.noon_sakinah;
+            
+            // Check which rule should apply
+            let expectedRule = null;
+            for (const [ruleName, ruleData] of Object.entries(rules)) {
+                if (ruleData.letters.includes(firstLetter)) {
+                    expectedRule = ruleData;
+                    break;
+                }
+            }
+            
+            if (expectedRule) {
+                // Simplified pronunciation check
+                const hasCorrectPronunciation = this.checkPronunciationPattern(spokenText, expectedRule);
+                if (!hasCorrectPronunciation) {
+                    mistakes.push({
+                        type: 'noon_sakinah',
+                        rule: expectedRule.rule,
+                        description: expectedRule.description,
+                        correction: expectedRule.pronunciation,
+                        word: word
+                    });
+                }
+            }
+        }
+        
+        return mistakes;
+    }
+    
+    checkMeemSakinahRules(spokenText, word, wordIndex) {
+        const mistakes = [];
+        const nextWord = wordIndex + 1 < this.wordsOnCurrentPage.length ? 
+            this.wordsOnCurrentPage[wordIndex + 1].text : '';
+        
+        if (nextWord) {
+            const firstLetter = nextWord.charAt(0);
+            const rules = this.tajweedRules.meem_sakinah;
+            
+            let expectedRule = null;
+            for (const [ruleName, ruleData] of Object.entries(rules)) {
+                if (ruleData.letters.includes(firstLetter)) {
+                    expectedRule = ruleData;
+                    break;
+                }
+            }
+            
+            if (expectedRule) {
+                const hasCorrectPronunciation = this.checkPronunciationPattern(spokenText, expectedRule);
+                if (!hasCorrectPronunciation) {
+                    mistakes.push({
+                        type: 'meem_sakinah',
+                        rule: expectedRule.rule,
+                        description: expectedRule.description,
+                        correction: expectedRule.pronunciation,
+                        word: word
+                    });
+                }
+            }
+        }
+        
+        return mistakes;
+    }
+    
+    checkMaddRules(spokenText, word) {
+        const mistakes = [];
+        const maddRules = this.tajweedRules.madd;
+        
+        for (const [ruleType, ruleData] of Object.entries(maddRules)) {
+            if (ruleData.pattern && word.match(ruleData.pattern)) {
+                // Check if elongation is present in speech
+                const hasElongation = this.checkElongation(spokenText, word);
+                if (!hasElongation) {
+                    mistakes.push({
+                        type: 'madd',
+                        rule: ruleData.rule,
+                        description: ruleData.description,
+                        correction: ruleData.pronunciation,
+                        word: word
+                    });
+                }
+            }
+        }
+        
+        return mistakes;
+    }
+    
+    checkQalqalahRules(spokenText, word) {
+        const mistakes = [];
+        const qalqalahLetters = this.tajweedRules.qalqalah.letters;
+        
+        for (const letter of qalqalahLetters) {
+            if (word.includes(letter)) {
+                const hasQalqalah = this.checkQalqalahPronunciation(spokenText, letter);
+                if (!hasQalqalah) {
+                    mistakes.push({
+                        type: 'qalqalah',
+                        rule: this.tajweedRules.qalqalah.rule,
+                        description: this.tajweedRules.qalqalah.description,
+                        correction: this.tajweedRules.qalqalah.pronunciation,
+                        word: word,
+                        letter: letter
+                    });
+                }
+            }
+        }
+        
+        return mistakes;
+    }
+    
+    checkPronunciationPattern(spokenText, rule) {
+        // Simplified check - in a real implementation, this would use 
+        // advanced audio analysis and phonetic comparison
+        const duration = spokenText.length;
+        const hasNasalSound = spokenText.includes('n') || spokenText.includes('m');
+        
+        if (rule.rule.includes('Ikhfaa')) {
+            return hasNasalSound && duration > 3;
+        }
+        if (rule.rule.includes('Idgham')) {
+            return duration > 2;
+        }
+        if (rule.rule.includes('Iqlab')) {
+            return spokenText.includes('m') || hasNasalSound;
+        }
+        
+        return true; // Default to correct for basic implementation
+    }
+    
+    checkElongation(spokenText, word) {
+        // Check for elongation in speech - simplified implementation
+        return spokenText.length > word.length * 0.8;
+    }
+    
+    checkQalqalahPronunciation(spokenText, letter) {
+        // Simplified check for qalqalah bounce
+        return spokenText.includes(letter) && spokenText.length > 2;
+    }
+    
+    showTajweedFeedback(mistakes) {
+        if (mistakes.length === 0) {
+            this.tajweedFeedback.classList.remove('show');
+            return;
+        }
+        
+        let feedbackHTML = '';
+        mistakes.forEach(mistake => {
+            feedbackHTML += `
+                <div class="mistake">❌ ${mistake.rule}</div>
+                <div class="rule">📜 ${mistake.description}</div>
+                <div class="correction">✅ ${mistake.correction}</div>
+                <hr style="margin: 10px 0; border: 1px solid #ddd;">
+            `;
+        });
+        
+        this.tajweedContent.innerHTML = feedbackHTML;
+        this.tajweedFeedback.classList.add('show');
+        
+        // Auto-hide after 5 seconds
+        setTimeout(() => {
+            this.tajweedFeedback.classList.remove('show');
+        }, 5000);
     }
     
     checkPageCompletion() {
