@@ -826,9 +826,26 @@ class QuranReader {
             'لله': 'lil-lah',
             'رب': 'rab-bi',
             'العالمين': 'al-ah-la-meen'
-        };\n        
+        };
+        
         // Try exact match first
-        if (phoneticMap[arabicWord]) {\n            return phoneticMap[arabicWord];\n        }\n        \n        // Try normalized version (remove diacritics)\n        const normalized = this.normalizeArabicText(arabicWord);\n        if (phoneticMap[normalized]) {\n            return phoneticMap[normalized];\n        }\n        \n        // Return null if no phonetic mapping found\n        return null;\n    }\n    \n    initializeQariDatabase() {\n        // TTS-based Qari simulation with different speech parameters\n        return {
+        if (phoneticMap[arabicWord]) {
+            return phoneticMap[arabicWord];
+        }
+        
+        // Try normalized version (remove diacritics)
+        const normalized = this.normalizeArabicText(arabicWord);
+        if (phoneticMap[normalized]) {
+            return phoneticMap[normalized];
+        }
+        
+        // Return null if no phonetic mapping found
+        return null;
+    }
+    
+    initializeQariDatabase() {
+        // TTS-based Qari simulation with different speech parameters
+        return {
             'abdul_basit': {
                 name: 'Sheikh Abdul Basit Abdul Samad',
                 style: 'Mujawwad (Slow & Clear)',
