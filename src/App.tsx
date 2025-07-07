@@ -15,7 +15,7 @@ const NotFoundPage = React.lazy(() => import('@/pages/NotFoundPage'))
 function App() {
   return (
     <ErrorBoundary>
-      <div className="min-h-screen bg-gradient-to-br from-islamic-cream via-white to-islamic-cream/50">
+      <div className="min-h-screen bg-gradient-to-br from-orange-50 via-white to-orange-50">
         {/* Islamic Pattern Background */}
         <div className="fixed inset-0 islamic-pattern opacity-30 pointer-events-none" />
         

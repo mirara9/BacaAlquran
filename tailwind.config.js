@@ -5,13 +5,11 @@ export default {
     extend: {
       colors: {
         // Islamic color palette
-        islamic: {
-          gold: '#D4AF37',
-          green: '#0F5132',
-          blue: '#1B4332',
-          teal: '#006A6B',
-          cream: '#F8F6F0',
-        },
+        'islamic-gold': '#D4AF37',
+        'islamic-green': '#0F5132',
+        'islamic-blue': '#1B4332',
+        'islamic-teal': '#006A6B',
+        'islamic-cream': '#F8F6F0',
         // Tajweed colors (subtle)
         tajweed: {
           ikhfaa: 'rgba(251, 191, 36, 0.15)',

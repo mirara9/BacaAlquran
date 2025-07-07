@@ -195,9 +195,9 @@ export default function RecitationPage() {
   const currentIndex = mockVerses.findIndex(v => v.id === currentVerseId)
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-islamic-cream via-white to-islamic-cream/50">
+    <div className="min-h-screen bg-gradient-to-br from-orange-50 via-white to-orange-50">
       {/* Navigation */}
-      <nav className="bg-white/80 backdrop-blur-md border-b border-islamic-green/10 sticky top-0 z-50">
+      <nav className="bg-white/80 backdrop-blur-md border-b border-green-200 sticky top-0 z-50">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="flex justify-between items-center h-16">
             <div className="flex items-center space-x-4">
@@ -212,7 +212,7 @@ export default function RecitationPage() {
               </Button>
               <div className="h-6 w-px bg-gray-300" />
               <div className="flex items-center space-x-2">
-                <BookOpen className="h-5 w-5 text-islamic-green" />
+                <BookOpen className="h-5 w-5 text-green-700" />
                 <span className="font-medium text-gray-900">Recitation Practice</span>
               </div>
             </div>

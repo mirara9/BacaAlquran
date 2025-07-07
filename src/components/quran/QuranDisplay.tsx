@@ -152,12 +152,12 @@ export function QuranDisplay({
             <Card 
               className={cn(
                 'transition-all duration-200 hover:shadow-md',
-                currentVerseId === verse.id && 'ring-2 ring-islamic-green ring-opacity-50 bg-islamic-cream/30'
+                currentVerseId === verse.id && 'ring-2 ring-green-600 ring-opacity-50 bg-green-50'
               )}
             >
               <CardHeader className="pb-4">
                 <div className="flex items-center justify-between">
-                  <CardTitle className="text-lg font-semibold text-islamic-green">
+                  <CardTitle className="text-lg font-semibold text-green-700">
                     <BookOpen className="mr-2 inline h-5 w-5" />
                     Surah {verse.surahNumber}, Verse {verse.verseNumber}
                   </CardTitle>
@@ -168,7 +168,7 @@ export function QuranDisplay({
                         variant="ghost"
                         size="sm"
                         onClick={() => handlePlayAudio(verse.id)}
-                        className="text-islamic-green hover:text-islamic-green/80"
+                        className="text-green-700 hover:text-green-600"
                       >
                         <Volume2 className="h-4 w-4" />
                       </Button>
@@ -230,7 +230,7 @@ export function QuranDisplay({
                 </div>
                 
                 {/* Translation */}
-                <div className="rounded-lg bg-islamic-cream/30 p-4">
+                <div className="rounded-lg bg-orange-50 p-4">
                   <p className="text-sm font-medium text-gray-700 mb-2">Translation:</p>
                   <p className="text-gray-800 leading-relaxed">
                     {verse.translation}
@@ -251,9 +251,9 @@ export function QuranDisplay({
             exit={{ opacity: 0, height: 0 }}
             transition={{ duration: 0.3 }}
           >
-            <Card className="border-islamic-gold/20">
+            <Card className="border-yellow-200">
               <CardHeader className="pb-3">
-                <CardTitle className="text-lg text-islamic-green flex items-center">
+                <CardTitle className="text-lg text-green-700 flex items-center">
                   <Eye className="mr-2 h-5 w-5" />
                   Tajweed Color Guide
                 </CardTitle>

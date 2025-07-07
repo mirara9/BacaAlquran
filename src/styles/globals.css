@@ -4,11 +4,11 @@
 
 @layer base {
   * {
-    @apply border-border;
+    @apply border-gray-200;
   }
   
   body {
-    @apply bg-background text-foreground;
+    @apply bg-gray-50 text-gray-900;
   }
 
   /* Arabic text optimization */
@@ -41,7 +41,7 @@
 
   /* Focus styles */
   .focus-ring {
-    @apply focus:outline-none focus:ring-2 focus:ring-islamic-green focus:ring-offset-2;
+    @apply focus:outline-none focus:ring-2 focus:ring-green-600 focus:ring-offset-2;
   }
 
   /* Islamic patterns */
@@ -57,7 +57,7 @@
   }
 
   .btn-primary {
-    @apply btn bg-islamic-green text-white hover:bg-islamic-green/90;
+    @apply btn bg-green-700 text-white hover:bg-green-800;
   }
 
   .btn-secondary {
@@ -65,16 +65,16 @@
   }
 
   .btn-outline {
-    @apply btn border border-input bg-background hover:bg-accent hover:text-accent-foreground;
+    @apply btn border border-gray-300 bg-white hover:bg-gray-50 hover:text-gray-900;
   }
 
   .btn-ghost {
-    @apply btn hover:bg-accent hover:text-accent-foreground;
+    @apply btn hover:bg-gray-100 hover:text-gray-900;
   }
 
   /* Card component */
   .card {
-    @apply rounded-lg border bg-card text-card-foreground shadow-sm;
+    @apply rounded-lg border bg-white text-gray-900 shadow-sm;
   }
 
   .card-header {
@@ -87,16 +87,16 @@
 
   /* Input styles */
   .input {
-    @apply flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background file:border-0 file:bg-transparent file:text-sm file:font-medium placeholder:text-muted-foreground focus-ring disabled:cursor-not-allowed disabled:opacity-50;
+    @apply flex h-10 w-full rounded-md border border-gray-300 bg-white px-3 py-2 text-sm file:border-0 file:bg-transparent file:text-sm file:font-medium placeholder:text-gray-500 focus-ring disabled:cursor-not-allowed disabled:opacity-50;
   }
 
   /* Progress bar */
   .progress {
-    @apply relative h-2 w-full overflow-hidden rounded-full bg-secondary;
+    @apply relative h-2 w-full overflow-hidden rounded-full bg-gray-200;
   }
 
   .progress-indicator {
-    @apply h-full w-full flex-1 bg-primary transition-all;
+    @apply h-full w-full flex-1 bg-green-600 transition-all;
   }
 
   /* Audio waveform styles */

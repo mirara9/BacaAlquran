@@ -129,7 +129,7 @@ export function AudioRecorder({
   }
 
   return (
-    <Card className={cn('border-islamic-green/20 bg-islamic-cream/50', className)}>
+    <Card className={cn('border-green-200 bg-green-50', className)}>
       <CardContent className="p-6">
         <div className="space-y-4">
           {/* Recording Status */}
@@ -159,7 +159,7 @@ export function AudioRecorder({
             {/* Duration Progress */}
             {isRecording && (
               <div className="text-right">
-                <p className="text-lg font-mono font-bold text-islamic-green">
+                <p className="text-lg font-mono font-bold text-green-700">
                   {formatDuration(duration)}
                 </p>
                 <p className="text-xs text-gray-500">

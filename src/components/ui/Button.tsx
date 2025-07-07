@@ -7,13 +7,13 @@ const buttonVariants = cva(
   {
     variants: {
       variant: {
-        default: 'bg-islamic-green text-white hover:bg-islamic-green/90',
+        default: 'bg-green-700 text-white hover:bg-green-800',
         destructive: 'bg-red-500 text-white hover:bg-red-600',
-        outline: 'border border-input bg-background hover:bg-accent hover:text-accent-foreground',
+        outline: 'border border-gray-300 bg-white hover:bg-gray-50 hover:text-gray-900',
         secondary: 'bg-gray-100 text-gray-900 hover:bg-gray-200',
-        ghost: 'hover:bg-accent hover:text-accent-foreground',
-        link: 'text-islamic-green underline-offset-4 hover:underline',
-        islamic: 'bg-gradient-to-r from-islamic-gold to-islamic-teal text-white hover:from-islamic-gold/90 hover:to-islamic-teal/90'
+        ghost: 'hover:bg-gray-100 hover:text-gray-900',
+        link: 'text-green-700 underline-offset-4 hover:underline',
+        islamic: 'bg-gradient-to-r from-yellow-500 to-teal-600 text-white hover:from-yellow-600 hover:to-teal-700'
       },
       size: {
         default: 'h-10 px-4 py-2',

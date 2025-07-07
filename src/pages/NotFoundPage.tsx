@@ -11,8 +11,8 @@ export default function NotFoundPage() {
     <div className="min-h-screen flex items-center justify-center p-4">
       <Card className="w-full max-w-md text-center">
         <CardHeader>
-          <div className="mx-auto w-16 h-16 bg-islamic-green/10 rounded-full flex items-center justify-center mb-4">
-            <BookOpen className="h-8 w-8 text-islamic-green" />
+          <div className="mx-auto w-16 h-16 bg-green-100 rounded-full flex items-center justify-center mb-4">
+            <BookOpen className="h-8 w-8 text-green-700" />
           </div>
           <CardTitle className="text-2xl font-bold text-gray-900">
             Page Not Found

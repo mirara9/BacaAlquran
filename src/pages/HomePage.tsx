@@ -44,14 +44,14 @@ export default function HomePage() {
   return (
     <div className="min-h-screen">
       {/* Navigation */}
-      <nav className="relative z-20 bg-white/80 backdrop-blur-md border-b border-islamic-green/10">
+      <nav className="relative z-20 bg-white/80 backdrop-blur-md border-b border-green-200">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="flex justify-between items-center h-16">
             <div className="flex items-center space-x-3">
-              <div className="w-8 h-8 bg-islamic-green rounded-lg flex items-center justify-center">
+              <div className="w-8 h-8 bg-green-700 rounded-lg flex items-center justify-center">
                 <BookOpen className="h-5 w-5 text-white" />
               </div>
-              <span className="text-xl font-bold text-islamic-green">QuranRecite</span>
+              <span className="text-xl font-bold text-green-700">QuranRecite</span>
             </div>
             <div className="hidden md:flex items-center space-x-4">
               <Button variant="ghost" onClick={() => navigate('/dashboard')}>
@@ -79,7 +79,7 @@ export default function HomePage() {
               className="text-4xl md:text-6xl lg:text-7xl font-bold text-gray-900 mb-6"
             >
               Perfect Your{' '}
-              <span className="text-transparent bg-clip-text bg-gradient-to-r from-islamic-green to-islamic-teal">
+              <span className="text-transparent bg-clip-text bg-gradient-to-r from-green-600 to-teal-600">
                 Quran Recitation
               </span>
             </motion.h1>
@@ -121,8 +121,8 @@ export default function HomePage() {
         </div>
         
         {/* Decorative Elements */}
-        <div className="absolute top-1/2 left-4 w-72 h-72 bg-islamic-green/5 rounded-full blur-3xl" />
-        <div className="absolute bottom-1/4 right-4 w-96 h-96 bg-islamic-teal/5 rounded-full blur-3xl" />
+        <div className="absolute top-1/2 left-4 w-72 h-72 bg-green-200 rounded-full blur-3xl opacity-30" />
+        <div className="absolute bottom-1/4 right-4 w-96 h-96 bg-teal-200 rounded-full blur-3xl opacity-30" />
       </section>
 
       {/* Features Section */}
@@ -158,8 +158,8 @@ export default function HomePage() {
               >
                 <Card className="h-full hover:shadow-lg transition-shadow duration-300">
                   <CardHeader>
-                    <div className="w-12 h-12 bg-islamic-green/10 rounded-lg flex items-center justify-center mb-4">
-                      <feature.icon className="h-6 w-6 text-islamic-green" />
+                    <div className="w-12 h-12 bg-green-100 rounded-lg flex items-center justify-center mb-4">
+                      <feature.icon className="h-6 w-6 text-green-700" />
                     </div>
                     <CardTitle className="text-xl font-semibold text-gray-900">
                       {feature.title}
@@ -178,7 +178,7 @@ export default function HomePage() {
       </section>
 
       {/* CTA Section */}
-      <section className="py-20 bg-gradient-to-r from-islamic-green to-islamic-teal">
+      <section className="py-20 bg-gradient-to-r from-green-700 to-teal-600">
         <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 text-center">
           <motion.h2
             initial={{ opacity: 0, y: 20 }}
@@ -205,7 +205,7 @@ export default function HomePage() {
             <Button
               size="xl"
               variant="secondary"
-              className="text-lg px-8 py-4 bg-white text-islamic-green hover:bg-gray-50"
+              className="text-lg px-8 py-4 bg-white text-green-700 hover:bg-gray-50"
               onClick={() => navigate('/recitation')}
             >
               <BookOpen className="mr-2 h-5 w-5" />
@@ -220,7 +220,7 @@ export default function HomePage() {
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="text-center">
             <div className="flex items-center justify-center space-x-3 mb-4">
-              <div className="w-8 h-8 bg-islamic-green rounded-lg flex items-center justify-center">
+              <div className="w-8 h-8 bg-green-700 rounded-lg flex items-center justify-center">
                 <BookOpen className="h-5 w-5 text-white" />
               </div>
               <span className="text-xl font-bold">QuranRecite</span>

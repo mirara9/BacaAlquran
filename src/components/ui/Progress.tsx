@@ -24,7 +24,7 @@ const Progress = React.forwardRef<HTMLDivElement, ProgressProps>(
     const percentage = Math.min(Math.max((value / max) * 100, 0), 100)
     
     const progressVariants = {
-      default: 'bg-islamic-green',
+      default: 'bg-green-700',
       success: 'bg-green-500',
       warning: 'bg-yellow-500',
       error: 'bg-red-500'
