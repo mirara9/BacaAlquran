@@ -1,0 +1,260 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Audio Test - Quran Reader</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            max-width: 800px;
+            margin: 0 auto;
+            padding: 20px;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            min-height: 100vh;
+        }
+        .test-section {
+            background: rgba(255,255,255,0.1);
+            padding: 20px;
+            margin: 20px 0;
+            border-radius: 10px;
+            backdrop-filter: blur(10px);
+        }
+        button {
+            padding: 12px 24px;
+            margin: 8px;
+            border: none;
+            border-radius: 25px;
+            background: #4CAF50;
+            color: white;
+            cursor: pointer;
+            font-weight: bold;
+            transition: all 0.3s ease;
+        }
+        button:hover {
+            background: #45a049;
+            transform: translateY(-2px);
+        }
+        button:disabled {
+            background: #ccc;
+            cursor: not-allowed;
+        }
+        .arabic {
+            font-size: 2em;
+            text-align: center;
+            margin: 20px 0;
+            direction: rtl;
+        }
+        .status {
+            background: rgba(255,255,255,0.9);
+            color: #333;
+            padding: 15px;
+            border-radius: 8px;
+            margin: 15px 0;
+            font-weight: bold;
+        }
+        .playing {
+            background: #ff9800 !important;
+            animation: pulse 1s infinite;
+        }
+        @keyframes pulse {
+            0% { opacity: 1; }
+            50% { opacity: 0.7; }
+            100% { opacity: 1; }
+        }
+    </style>
+</head>
+<body>
+    <h1>🎵 Audio System Test</h1>
+    
+    <div class="test-section">
+        <h2>🔧 System Check</h2>
+        <div class="status" id="systemStatus">Checking audio capabilities...</div>
+        <button onclick="checkSystem()">🔍 Test System</button>
+    </div>
+    
+    <div class="test-section">
+        <h2>🎙️ Text-to-Speech Test</h2>
+        <div class="arabic">بِسْمِ اللَّهِ الرَّحْمَنِ الرَّحِيمِ</div>
+        <div style="text-align: center;">
+            <button onclick="testTTS('بِسْمِ', 'Abdul Basit', {rate: 0.4, pitch: 0.9})">Play "بِسْمِ" (Abdul Basit - Slow)</button>
+            <button onclick="testTTS('اللَّهِ', 'Mishary', {rate: 0.6, pitch: 1.0})">Play "اللَّهِ" (Mishary - Normal)</button>
+            <button onclick="testTTS('الرَّحْمَنِ', 'Sudais', {rate: 0.7, pitch: 1.1})">Play "الرَّحْمَنِ" (Sudais - Clear)</button>
+        </div>
+        <div class="status" id="ttsStatus">Ready to test TTS...</div>
+    </div>
+    
+    <div class="test-section">
+        <h2>🔊 Web Audio Test</h2>
+        <div style="text-align: center;">
+            <button onclick="testBeep(220, 500)">Low Beep (220Hz)</button>
+            <button onclick="testBeep(440, 500)">Medium Beep (440Hz)</button>
+            <button onclick="testBeep(880, 500)">High Beep (880Hz)</button>
+        </div>
+        <div class="status" id="audioStatus">Ready to test audio...</div>
+    </div>
+    
+    <div class="test-section">
+        <h2>✅ Test Results</h2>
+        <div id="results">
+            <p><strong>TTS Support:</strong> <span id="ttsResult">Not tested</span></p>
+            <p><strong>Web Audio:</strong> <span id="webAudioResult">Not tested</span></p>
+            <p><strong>Arabic Voices:</strong> <span id="arabicVoices">Not tested</span></p>
+        </div>
+    </div>
+
+    <script>
+        let audioContext = null;
+        let currentAudio = null;
+        
+        async function checkSystem() {
+            const status = document.getElementById('systemStatus');
+            status.textContent = 'Testing system capabilities...';
+            
+            // Test TTS
+            const ttsResult = document.getElementById('ttsResult');
+            if ('speechSynthesis' in window) {
+                ttsResult.textContent = '✅ Available';
+                ttsResult.style.color = 'green';
+                
+                // Check voices
+                const voices = speechSynthesis.getVoices();
+                const arabicVoicesElem = document.getElementById('arabicVoices');
+                const arabicVoices = voices.filter(v => v.lang.includes('ar'));
+                
+                if (arabicVoices.length > 0) {
+                    arabicVoicesElem.textContent = `✅ ${arabicVoices.length} found: ${arabicVoices.map(v => v.name).join(', ')}`;
+                    arabicVoicesElem.style.color = 'green';
+                } else {
+                    arabicVoicesElem.textContent = '⚠️ No Arabic voices found';
+                    arabicVoicesElem.style.color = 'orange';
+                }
+            } else {
+                ttsResult.textContent = '❌ Not supported';
+                ttsResult.style.color = 'red';
+            }
+            
+            // Test Web Audio
+            const webAudioResult = document.getElementById('webAudioResult');
+            try {
+                audioContext = new (window.AudioContext || window.webkitAudioContext)();
+                webAudioResult.textContent = '✅ Available';
+                webAudioResult.style.color = 'green';
+            } catch (error) {
+                webAudioResult.textContent = '❌ Not supported';
+                webAudioResult.style.color = 'red';
+            }
+            
+            status.textContent = '✅ System check complete!';
+        }
+        
+        async function testTTS(word, qariName, config) {
+            const button = event.target;
+            const status = document.getElementById('ttsStatus');
+            
+            if (!('speechSynthesis' in window)) {
+                status.textContent = '❌ TTS not supported';
+                return;
+            }
+            
+            // Stop any current speech
+            speechSynthesis.cancel();
+            
+            button.classList.add('playing');
+            button.disabled = true;
+            status.textContent = `🎙️ Speaking "${word}" as ${qariName}...`;
+            
+            const utterance = new SpeechSynthesisUtterance(word);
+            utterance.lang = 'ar-SA';
+            utterance.rate = config.rate;
+            utterance.pitch = config.pitch;
+            utterance.volume = 0.9;
+            
+            // Try to find Arabic voice
+            const voices = speechSynthesis.getVoices();
+            const arabicVoice = voices.find(v => v.lang.includes('ar'));
+            if (arabicVoice) {
+                utterance.voice = arabicVoice;
+                console.log('Using Arabic voice:', arabicVoice.name);
+            }
+            
+            utterance.onstart = () => {
+                status.textContent = `🔊 Playing "${word}" (${qariName} style)`;
+            };
+            
+            utterance.onend = () => {
+                button.classList.remove('playing');
+                button.disabled = false;
+                status.textContent = `✅ Finished playing "${word}"`;
+            };
+            
+            utterance.onerror = (error) => {
+                button.classList.remove('playing');
+                button.disabled = false;
+                status.textContent = `❌ TTS error: ${error.error}`;
+            };
+            
+            speechSynthesis.speak(utterance);
+        }
+        
+        async function testBeep(frequency, duration) {
+            const button = event.target;
+            const status = document.getElementById('audioStatus');
+            
+            if (!audioContext) {
+                try {
+                    audioContext = new (window.AudioContext || window.webkitAudioContext)();
+                } catch (error) {
+                    status.textContent = '❌ Web Audio not supported';
+                    return;
+                }
+            }
+            
+            // Resume context if suspended
+            if (audioContext.state === 'suspended') {
+                await audioContext.resume();
+            }
+            
+            button.classList.add('playing');
+            button.disabled = true;
+            status.textContent = `🔊 Playing ${frequency}Hz beep...`;
+            
+            try {
+                const oscillator = audioContext.createOscillator();
+                const gainNode = audioContext.createGain();
+                
+                oscillator.connect(gainNode);
+                gainNode.connect(audioContext.destination);
+                
+                oscillator.frequency.value = frequency;
+                oscillator.type = 'sine';
+                
+                // Envelope
+                gainNode.gain.setValueAtTime(0, audioContext.currentTime);
+                gainNode.gain.linearRampToValueAtTime(0.1, audioContext.currentTime + 0.05);
+                gainNode.gain.exponentialRampToValueAtTime(0.001, audioContext.currentTime + duration / 1000);
+                
+                oscillator.start();
+                oscillator.stop(audioContext.currentTime + duration / 1000);
+                
+                oscillator.onended = () => {
+                    button.classList.remove('playing');
+                    button.disabled = false;
+                    status.textContent = `✅ Finished ${frequency}Hz beep`;
+                };
+                
+            } catch (error) {
+                button.classList.remove('playing');
+                button.disabled = false;
+                status.textContent = `❌ Audio error: ${error.message}`;
+            }
+        }
+        
+        // Auto-check system on load
+        document.addEventListener('DOMContentLoaded', () => {
+            setTimeout(checkSystem, 500);
+        });
+    </script>
+</body>
+</html>

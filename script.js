@@ -11,11 +11,13 @@ class QuranReader {
         this.tajweedRules = this.initializeTajweedRules();
         this.audioContext = null;
         this.currentAudio = null;
+        this.currentOscillator = null;
         this.qariDatabase = this.initializeQariDatabase();
         this.audioManifest = null;
         this.selectedQari = 'abdul_basit';
         this.audioCache = new Map();
-        this.loadAudioManifest();
+        this.audioInitialized = false;
+        this.initializeAudioSystem();
         
         this.initializeElements();
         this.initializeSpeechRecognition();
@@ -153,7 +155,11 @@ class QuranReader {
                 refreshBtn.title = 'Re-read this word';
                 refreshBtn.addEventListener('click', (e) => {
                     e.stopPropagation();
-                    this.resetWord(this.wordsOnCurrentPage.length);
+                    const globalIndex = this.wordsOnCurrentPage.length;
+                    this.resetWord(globalIndex);
+                    
+                    // Play audio immediately when refresh is clicked
+                    console.log(`Refresh clicked for word: ${word}`);
                     this.playWordAudio(word, verseIndex, wordIndex);
                 });
                 wordSpan.appendChild(refreshBtn);
@@ -657,39 +663,110 @@ class QuranReader {
     }
     
     initializeQariDatabase() {
-        // Local Qari database pointing to local audio files
+        // TTS-based Qari simulation with different speech parameters
         return {
             'abdul_basit': {
                 name: 'Sheikh Abdul Basit Abdul Samad',
                 style: 'Mujawwad (Slow & Clear)',
-                directory: 'audio/qaris/abdul_basit/',
+                ttsConfig: {
+                    rate: 0.4,
+                    pitch: 0.9,
+                    volume: 0.9,
+                    preferredLang: 'ar-SA'
+                },
                 enabled: true
             },
             'mishary': {
                 name: 'Sheikh Mishary Rashid Alafasy', 
                 style: 'Murattal (Moderate)',
-                directory: 'audio/qaris/mishary/',
+                ttsConfig: {
+                    rate: 0.6,
+                    pitch: 1.0,
+                    volume: 0.8,
+                    preferredLang: 'ar'
+                },
                 enabled: true
             },
             'sudais': {
                 name: 'Sheikh Abdul Rahman Al-Sudais',
                 style: 'Murattal (Clear)',
-                directory: 'audio/qaris/sudais/',
+                ttsConfig: {
+                    rate: 0.7,
+                    pitch: 1.1,
+                    volume: 0.85,
+                    preferredLang: 'ar-SA'
+                },
                 enabled: true
             }
         };
     }
     
-    async loadAudioManifest() {
-        try {
-            const response = await fetch('audio/audio_manifest.json');
-            this.audioManifest = await response.json();
-            console.log('Audio manifest loaded successfully');
-            this.preloadCommonAudio();
-        } catch (error) {
-            console.error('Error loading audio manifest:', error);
-            this.audioManifest = this.createFallbackManifest();
+    async initializeAudioSystem() {
+        console.log('🎵 Initializing audio system...');
+        
+        // Test TTS availability
+        if ('speechSynthesis' in window) {
+            console.log('✅ Text-to-Speech available');
+            
+            // Preload voices
+            if (speechSynthesis.getVoices().length === 0) {
+                speechSynthesis.onvoiceschanged = () => {
+                    const voices = speechSynthesis.getVoices();
+                    console.log(`🎤 Loaded ${voices.length} TTS voices`);
+                    const arabicVoices = voices.filter(v => v.lang.includes('ar'));
+                    if (arabicVoices.length > 0) {
+                        console.log(`🔊 Found ${arabicVoices.length} Arabic voices:`, arabicVoices.map(v => v.name));
+                    } else {
+                        console.log('⚠️ No Arabic voices found - will use default voice');
+                    }
+                };
+            }
+        } else {
+            console.log('❌ Text-to-Speech not available');
+            this.listeningStatus.textContent = '❌ Text-to-Speech not supported in this browser';
         }
+        
+        // Test Web Audio API
+        try {
+            this.audioContext = new (window.AudioContext || window.webkitAudioContext)();
+            console.log(`✅ Web Audio API available (${this.audioContext.state})`);
+        } catch (error) {
+            console.log('❌ Web Audio API not available:', error);
+        }
+        
+        // Add user interaction requirement notice
+        this.addAudioActivationListener();
+        
+        this.audioInitialized = true;
+        console.log('✅ Audio system initialized successfully');
+        this.listeningStatus.textContent = '🎵 Audio system ready - click any button to activate';
+    }
+    
+    addAudioActivationListener() {
+        // Audio requires user interaction in modern browsers
+        const activateAudio = async () => {
+            console.log('🎵 Activating audio system...');
+            
+            if (this.audioContext && this.audioContext.state === 'suspended') {
+                try {
+                    await this.audioContext.resume();
+                    console.log('✅ Audio context resumed');
+                } catch (error) {
+                    console.error('Failed to resume audio context:', error);
+                }
+            }
+            
+            // Test if TTS is working
+            if ('speechSynthesis' in window) {
+                console.log('🎤 TTS system ready');
+                this.listeningStatus.textContent = '✅ Audio activated - ready to play sounds';
+            }
+            
+            // Remove listener after first activation
+            document.removeEventListener('click', activateAudio);
+        };
+        
+        document.addEventListener('click', activateAudio, { once: true });
     }
     
     createFallbackManifest() {
@@ -735,16 +812,36 @@ class QuranReader {
     async preloadAudio(word, audioFilename) {
         try {
             const audioPath = `${this.qariDatabase[this.selectedQari].directory}${audioFilename}`;
-            const audio = new Audio(audioPath);
             
-            // Preload the audio
-            audio.preload = 'auto';
-            audio.load();
+            // Test if the audio file exists and is valid
+            const testAudio = new Audio();
             
-            // Cache it
-            this.audioCache.set(word, audio);
-            
-            console.log(`Preloaded: ${word}`);
+            return new Promise((resolve) => {
+                testAudio.oncanplaythrough = () => {
+                    console.log(`✅ Preloaded: ${word} (${audioFilename})`);
+                    resolve();
+                };
+                
+                testAudio.onerror = () => {
+                    console.log(`⚠️  Could not preload ${word}: file not found or invalid`);
+                    resolve(); // Don't fail, just log
+                };
+                
+                testAudio.onabort = () => {
+                    console.log(`⚠️  Preload aborted for ${word}`);
+                    resolve();
+                };
+                
+                // Set a timeout for preloading
+                setTimeout(() => {
+                    console.log(`⏰ Preload timeout for ${word}`);
+                    resolve();
+                }, 2000);
+                
+                testAudio.preload = 'metadata';
+                testAudio.src = audioPath;
+                testAudio.load();
+            });
         } catch (error) {
             console.log(`Could not preload ${word}:`, error);
         }
@@ -753,28 +850,41 @@ class QuranReader {
     async playWordAudio(word, verseIndex, wordIndex) {
         try {
             // Stop any currently playing audio
-            if (this.currentAudio) {
-                this.currentAudio.pause();
-                this.currentAudio.currentTime = 0;
-                this.currentAudio = null;
-            }
+            this.stopCurrentAudio();
             
-            // Find the audio file for this word
-            const audioFilename = this.findAudioForWord(word, verseIndex, wordIndex);
-            
-            if (audioFilename) {
-                await this.playLocalAudio(word, audioFilename);
-            } else {
-                // Fallback to TTS
-                await this.playDemoAudio(word);
-                this.listeningStatus.textContent = `Playing TTS pronunciation of "${word}" (no local audio found)`;
-            }
+            // Always use TTS as primary method for now (most reliable)
+            console.log(`Playing word: ${word}`);
+            await this.playEnhancedTTS(word);
             
         } catch (error) {
             console.error('Error playing audio:', error);
-            // Fallback to TTS on error
-            await this.playDemoAudio(word);
-            this.listeningStatus.textContent = `Playing fallback pronunciation of "${word}"`;
+            // Final fallback to beep sound
+            await this.playBeepSound(440 + (wordIndex * 110), 400);
+            this.listeningStatus.textContent = `Audio fallback used for "${word}"`;
+        }
+    }
+    
+    stopCurrentAudio() {
+        // Stop any audio element
+        if (this.currentAudio) {
+            try {
+                this.currentAudio.pause();
+                this.currentAudio.currentTime = 0;
+                this.currentAudio = null;
+            } catch (e) {}
+        }
+        
+        // Stop speech synthesis
+        if ('speechSynthesis' in window) {
+            speechSynthesis.cancel();
+        }
+        
+        // Stop Web Audio
+        if (this.currentOscillator) {
+            try {
+                this.currentOscillator.stop();
+                this.currentOscillator = null;
+            } catch (e) {}
         }
     }
     
@@ -809,30 +919,17 @@ class QuranReader {
     async playLocalAudio(word, audioFilename) {
         return new Promise((resolve, reject) => {
             try {
-                // Check if audio is already cached
-                let audio = this.audioCache.get(word);
+                // Create new audio element each time to avoid caching issues
+                const audioPath = `${this.qariDatabase[this.selectedQari].directory}${audioFilename}`;
+                const audio = new Audio();
                 
-                if (!audio) {
-                    // Create new audio element
-                    const audioPath = `${this.qariDatabase[this.selectedQari].directory}${audioFilename}`;
-                    audio = new Audio(audioPath);
-                    
-                    // Cache it for next time
-                    this.audioCache.set(word, audio);
-                }
-                
-                // Reset audio to beginning
-                audio.currentTime = 0;
-                
-                // Set up event listeners
-                audio.onended = () => {
-                    this.currentAudio = null;
-                    resolve();
-                };
-                
+                // Set up error handling first
                 audio.onerror = (error) => {
-                    console.error(`Error playing ${audioFilename}:`, error);
-                    reject(error);
+                    console.error(`Error loading ${audioFilename}:`, error);
+                    this.listeningStatus.textContent = `Audio file not found, using TTS fallback...`;
+                    
+                    // Fallback to TTS
+                    this.playDemoAudio(word).then(resolve).catch(reject);
                 };
                 
                 audio.onloadstart = () => {
@@ -843,40 +940,217 @@ class QuranReader {
                     this.listeningStatus.textContent = `Playing "${word}" by ${this.qariDatabase[this.selectedQari].name}`;
                 };
                 
-                // Store reference and play
+                audio.onended = () => {
+                    this.currentAudio = null;
+                    resolve();
+                };
+                
+                audio.onloadeddata = () => {
+                    // Check if audio has actual content
+                    if (audio.duration && audio.duration > 0.1) {
+                        console.log(`Successfully loaded ${audioFilename}, duration: ${audio.duration}s`);
+                    } else {
+                        console.warn(`Audio file ${audioFilename} seems to be empty or very short`);
+                    }
+                };
+                
+                // Store reference and set source
                 this.currentAudio = audio;
-                audio.play().catch(reject);
+                audio.src = audioPath;
+                audio.load();
+                
+                // Try to play with better error handling
+                audio.play().catch(error => {
+                    console.error(`Playback failed for ${audioFilename}:`, error);
+                    this.listeningStatus.textContent = `Playback failed, using TTS fallback...`;
+                    
+                    // Fallback to TTS
+                    this.playDemoAudio(word).then(resolve).catch(reject);
+                });
                 
             } catch (error) {
-                reject(error);
+                console.error(`Error in playLocalAudio:`, error);
+                // Fallback to TTS
+                this.playDemoAudio(word).then(resolve).catch(reject);
             }
         });
     }
     
-    async playDemoAudio(word) {
-        // Demo using Web Speech API for text-to-speech
-        // In production, replace with actual Qari audio files
+    async playEnhancedTTS(word) {
+        // Primary TTS method with improved reliability
         if ('speechSynthesis' in window) {
-            const utterance = new SpeechSynthesisUtterance(word);
-            utterance.lang = 'ar-SA';
-            utterance.rate = 0.6;
-            utterance.pitch = 1.0;
+            return new Promise((resolve) => {
+                console.log(`Starting TTS for: ${word}`);
+                
+                // Stop any current speech
+                speechSynthesis.cancel();
+                
+                const utterance = new SpeechSynthesisUtterance(word);
+                
+                // Configure using selected Qari's settings
+                const qariConfig = this.qariDatabase[this.selectedQari].ttsConfig;
+                utterance.lang = qariConfig.preferredLang;
+                utterance.rate = qariConfig.rate;
+                utterance.pitch = qariConfig.pitch;
+                utterance.volume = qariConfig.volume;
+                
+                // Set up event handlers
+                utterance.onstart = () => {
+                    console.log(`TTS started for: ${word}`);
+                    this.listeningStatus.textContent = `🔊 Playing "${word}" by ${this.qariDatabase[this.selectedQari].name} (TTS)`;
+                };
+                
+                utterance.onend = () => {
+                    console.log(`TTS completed for: ${word}`);
+                    this.listeningStatus.textContent = `✅ Finished playing "${word}"`;
+                    resolve();
+                };
+                
+                utterance.onerror = (error) => {
+                    console.error('TTS error:', error);
+                    this.listeningStatus.textContent = `TTS failed, trying beep sound...`;
+                    // Fallback to beep
+                    this.playBeepSound(440, 400).then(resolve).catch(resolve);
+                };
+                
+                // Enhanced voice selection
+                const selectVoiceAndSpeak = () => {
+                    const voices = speechSynthesis.getVoices();
+                    console.log(`Available voices: ${voices.length}`);
+                    
+                    // Priority order for Arabic voices
+                    const voicePriority = [
+                        v => v.lang === 'ar-SA',
+                        v => v.lang === 'ar',
+                        v => v.lang.startsWith('ar-'),
+                        v => v.name.toLowerCase().includes('arabic'),
+                        v => v.name.toLowerCase().includes('saudi'),
+                        v => v.name.toLowerCase().includes('nural')
+                    ];
+                    
+                    let selectedVoice = null;
+                    for (const criterion of voicePriority) {
+                        selectedVoice = voices.find(criterion);
+                        if (selectedVoice) break;
+                    }
+                    
+                    if (selectedVoice) {
+                        utterance.voice = selectedVoice;
+                        console.log(`Selected voice: ${selectedVoice.name} (${selectedVoice.lang})`);
+                    } else {
+                        console.log('No Arabic voice found, using system default');
+                    }
+                    
+                    // Speak the word
+                    try {
+                        speechSynthesis.speak(utterance);
+                    } catch (error) {
+                        console.error('Speech synthesis error:', error);
+                        this.playBeepSound(440, 400).then(resolve).catch(resolve);
+                    }
+                };
+                
+                // Handle voice loading with improved timing
+                if (speechSynthesis.getVoices().length > 0) {
+                    selectVoiceAndSpeak();
+                } else {
+                    // Set up voice loading handler
+                    let voicesLoaded = false;
+                    const onVoicesChanged = () => {
+                        if (!voicesLoaded && speechSynthesis.getVoices().length > 0) {
+                            voicesLoaded = true;
+                            speechSynthesis.onvoiceschanged = null;
+                            selectVoiceAndSpeak();
+                        }
+                    };
+                    
+                    speechSynthesis.onvoiceschanged = onVoicesChanged;
+                    
+                    // Fallback timeout - try without waiting if voices don't load
+                    setTimeout(() => {
+                        if (!voicesLoaded) {
+                            console.log('Voice loading timeout, proceeding without voice selection');
+                            speechSynthesis.onvoiceschanged = null;
+                            selectVoiceAndSpeak();
+                        }
+                    }, 500);
+                }
+            });
+        } else {
+            console.log('Speech synthesis not available, using beep sound');
+            return this.playBeepSound(440, 400);
+        }
+    }
+    
+    async playDemoAudio(word) {
+        // Backward compatibility method
+        return this.playEnhancedTTS(word);
+    }
+    
+    async playBeepSound(frequency = 440, duration = 300) {
+        // Enhanced beep sound with better audio quality
+        try {
+            console.log(`Playing beep: ${frequency}Hz for ${duration}ms`);
             
-            // Try to find an Arabic voice
-            const voices = speechSynthesis.getVoices();
-            const arabicVoice = voices.find(voice => 
-                voice.lang.includes('ar') || voice.name.includes('Arabic')
-            );
-            
-            if (arabicVoice) {
-                utterance.voice = arabicVoice;
+            if (!this.audioContext) {
+                this.audioContext = new (window.AudioContext || window.webkitAudioContext)();
             }
             
-            return new Promise((resolve) => {
-                utterance.onend = resolve;
-                utterance.onerror = resolve;
-                speechSynthesis.speak(utterance);
+            // Resume audio context if suspended (required for user interaction)
+            if (this.audioContext.state === 'suspended') {
+                await this.audioContext.resume();
+            }
+            
+            const oscillator = this.audioContext.createOscillator();
+            const gainNode = this.audioContext.createGain();
+            const filterNode = this.audioContext.createBiquadFilter();
+            
+            // Connect nodes for better sound quality
+            oscillator.connect(filterNode);
+            filterNode.connect(gainNode);
+            gainNode.connect(this.audioContext.destination);
+            
+            // Configure oscillator
+            oscillator.frequency.setValueAtTime(frequency, this.audioContext.currentTime);
+            oscillator.type = 'sine';
+            
+            // Configure filter for smoother sound
+            filterNode.type = 'lowpass';
+            filterNode.frequency.setValueAtTime(frequency * 2, this.audioContext.currentTime);
+            
+            // Configure envelope for smooth attack and decay
+            gainNode.gain.setValueAtTime(0, this.audioContext.currentTime);
+            gainNode.gain.linearRampToValueAtTime(0.15, this.audioContext.currentTime + 0.05);
+            gainNode.gain.linearRampToValueAtTime(0.1, this.audioContext.currentTime + duration / 2000);
+            gainNode.gain.exponentialRampToValueAtTime(0.001, this.audioContext.currentTime + duration / 1000);
+            
+            // Store reference for cleanup
+            this.currentOscillator = oscillator;
+            
+            // Start and schedule stop
+            oscillator.start(this.audioContext.currentTime);
+            oscillator.stop(this.audioContext.currentTime + duration / 1000);
+            
+            this.listeningStatus.textContent = `🎵 Playing audio tone (${frequency}Hz) - Audio files not available`;
+            
+            return new Promise(resolve => {
+                oscillator.onended = () => {
+                    this.currentOscillator = null;
+                    this.listeningStatus.textContent = `✅ Finished audio tone`;
+                    resolve();
+                };
+                
+                // Fallback timeout
+                setTimeout(() => {
+                    this.currentOscillator = null;
+                    resolve();
+                }, duration + 200);
             });
+            
+        } catch (error) {
+            console.error('Web Audio API error:', error);
+            this.listeningStatus.textContent = `❌ Audio not available - ${error.message}`;
+            return Promise.resolve();
         }
     }
     
@@ -1016,25 +1290,15 @@ class QuranReader {
         playBtn.innerHTML = '🔊 Playing...';
         
         try {
-            // Find the word in current page and play its audio
-            const wordData = this.wordsOnCurrentPage.find(w => 
-                w.text === word || this.normalizeArabicText(w.text) === this.normalizeArabicText(word)
-            );
+            console.log(`Playing correct pronunciation for: ${word}`);
             
-            if (wordData) {
-                const globalIndex = parseInt(wordData.element.dataset.globalIndex);
-                const verseIndex = parseInt(wordData.element.dataset.verseIndex);
-                const wordIndex = parseInt(wordData.element.dataset.wordIndex);
-                
-                await this.playWordAudio(word, verseIndex, wordIndex);
-            } else {
-                // Fallback to TTS
-                await this.playDemoAudio(word);
-            }
+            // Always use TTS for reliable playback
+            await this.playEnhancedTTS(word);
+            
         } catch (error) {
             console.error('Error playing pronunciation:', error);
-            // Fallback to TTS
-            await this.playDemoAudio(word);
+            // Final fallback to beep
+            await this.playBeepSound(660, 500);
         } finally {
             playBtn.classList.remove('playing');
             playBtn.disabled = false;
@@ -1045,15 +1309,11 @@ class QuranReader {
     changeQari(qariId) {
         if (this.qariDatabase[qariId]) {
             this.selectedQari = qariId;
+            const qari = this.qariDatabase[qariId];
+            const config = qari.ttsConfig;
             
-            // Clear audio cache to reload with new qari
-            this.audioCache.clear();
-            
-            // Preload some audio with new qari
-            this.preloadCommonAudio();
-            
-            this.listeningStatus.textContent = `Switched to ${this.qariDatabase[qariId].name}`;
-            console.log(`Switched to Qari: ${this.qariDatabase[qariId].name}`);
+            this.listeningStatus.textContent = `✅ Switched to ${qari.name} - ${qari.style}`;
+            console.log(`Switched to Qari: ${qari.name} (Rate: ${config.rate}, Pitch: ${config.pitch})`);
         }
     }
     
