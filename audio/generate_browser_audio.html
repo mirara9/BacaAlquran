@@ -1,0 +1,410 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Browser Audio Generator - Quran Reader</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            padding: 20px;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            min-height: 100vh;
+        }
+        .container {
+            max-width: 800px;
+            margin: 0 auto;
+            background: rgba(255,255,255,0.1);
+            padding: 30px;
+            border-radius: 15px;
+            backdrop-filter: blur(10px);
+        }
+        .section {
+            background: rgba(255,255,255,0.2);
+            padding: 20px;
+            margin: 20px 0;
+            border-radius: 10px;
+        }
+        button {
+            padding: 12px 24px;
+            margin: 8px;
+            border: none;
+            border-radius: 25px;
+            background: #4CAF50;
+            color: white;
+            cursor: pointer;
+            font-weight: bold;
+            transition: all 0.3s ease;
+        }
+        button:hover {
+            background: #45a049;
+            transform: translateY(-2px);
+        }
+        button:disabled {
+            background: #ccc;
+            cursor: not-allowed;
+            transform: none;
+        }
+        .status {
+            margin: 15px 0;
+            padding: 15px;
+            background: rgba(255,255,255,0.9);
+            color: #333;
+            border-radius: 8px;
+            font-weight: bold;
+        }
+        .word-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 15px;
+            margin: 20px 0;
+        }
+        .word-item {
+            background: rgba(255,255,255,0.2);
+            padding: 15px;
+            border-radius: 8px;
+            text-align: center;
+        }
+        .arabic {
+            font-size: 1.5em;
+            margin-bottom: 8px;
+            direction: rtl;
+        }
+        .transliteration {
+            font-style: italic;
+            opacity: 0.8;
+            margin-bottom: 10px;
+        }
+        select {
+            padding: 8px 12px;
+            border-radius: 20px;
+            border: none;
+            background: white;
+            color: #333;
+            font-weight: bold;
+            margin: 0 10px;
+        }
+        .playing {
+            background: #ff9800 !important;
+            animation: pulse 1s infinite;
+        }
+        @keyframes pulse {
+            0% { opacity: 1; }
+            50% { opacity: 0.7; }
+            100% { opacity: 1; }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>🎵 Browser Audio Generator</h1>
+        <p>Generate working audio files directly in your browser for the Quran Reader app</p>
+        
+        <div class="section">
+            <h2>🔧 Audio Generation Methods</h2>
+            <div class="status" id="mainStatus">Ready to generate audio...</div>
+            
+            <div style="margin: 20px 0;">
+                <label>Method:</label>
+                <select id="audioMethod">
+                    <option value="tts">Text-to-Speech (Best Quality)</option>
+                    <option value="beep">Tone Beeps (Always Works)</option>
+                    <option value="sine">Sine Wave Tones</option>
+                </select>
+                
+                <label>Speed:</label>
+                <select id="speechRate">
+                    <option value="0.3">Very Slow (Abdul Basit Style)</option>
+                    <option value="0.6" selected>Slow (Mujawwad)</option>
+                    <option value="0.8">Normal (Murattal)</option>
+                    <option value="1.0">Fast</option>
+                </select>
+            </div>
+            
+            <button onclick="generateAllAudio()">🎵 Generate All Audio Files</button>
+            <button onclick="testSystemCapabilities()">🔍 Test System Capabilities</button>
+            <button onclick="playTestSequence()">▶️ Play Test Sequence</button>
+        </div>
+        
+        <div class="section">
+            <h2>📖 Al-Fatiha Words</h2>
+            <div class="word-grid" id="wordGrid">
+                <!-- Words will be populated here -->
+            </div>
+        </div>
+        
+        <div class="section">
+            <h2>📊 System Information</h2>
+            <div id="systemInfo">
+                <p><strong>Speech Synthesis:</strong> <span id="ttsSupport">Checking...</span></p>
+                <p><strong>Web Audio API:</strong> <span id="audioSupport">Checking...</span></p>
+                <p><strong>Available Voices:</strong> <span id="voiceCount">Checking...</span></p>
+                <p><strong>MediaRecorder API:</strong> <span id="recordSupport">Checking...</span></p>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // Al-Fatiha words data
+        const alFatihaWords = [
+            {arabic: "بِسْمِ", transliteration: "bismi", file: "001_001_001.mp3"},
+            {arabic: "اللَّهِ", transliteration: "allahi", file: "001_001_002.mp3"},
+            {arabic: "الرَّحْمَنِ", transliteration: "ar-rahmani", file: "001_001_003.mp3"},
+            {arabic: "الرَّحِيمِ", transliteration: "ar-raheem", file: "001_001_004.mp3"},
+            {arabic: "الْحَمْدُ", transliteration: "alhamdu", file: "001_002_001.mp3"},
+            {arabic: "لِلَّهِ", transliteration: "lillahi", file: "001_002_002.mp3"},
+            {arabic: "رَبِّ", transliteration: "rabbi", file: "001_002_003.mp3"},
+            {arabic: "الْعَالَمِينَ", transliteration: "al-alameen", file: "001_002_004.mp3"},
+            {arabic: "الرَّحْمَنِ", transliteration: "ar-rahmani", file: "001_003_001.mp3"},
+            {arabic: "الرَّحِيمِ", transliteration: "ar-raheem", file: "001_003_002.mp3"},
+            {arabic: "مَالِكِ", transliteration: "maliki", file: "001_004_001.mp3"},
+            {arabic: "يَوْمِ", transliteration: "yawmi", file: "001_004_002.mp3"},
+            {arabic: "الدِّينِ", transliteration: "ad-deen", file: "001_004_003.mp3"}
+        ];
+        
+        let currentAudio = null;
+        let audioContext = null;
+        
+        // Initialize page
+        document.addEventListener('DOMContentLoaded', () => {
+            populateWordGrid();
+            testSystemCapabilities();
+        });
+        
+        function populateWordGrid() {
+            const grid = document.getElementById('wordGrid');
+            grid.innerHTML = '';
+            
+            alFatihaWords.forEach((word, index) => {
+                const wordDiv = document.createElement('div');
+                wordDiv.className = 'word-item';
+                wordDiv.innerHTML = `
+                    <div class="arabic">${word.arabic}</div>
+                    <div class="transliteration">${word.transliteration}</div>
+                    <button onclick="playWordAudio('${word.arabic}', '${word.transliteration}', ${index})">
+                        🔊 Play
+                    </button>
+                `;
+                grid.appendChild(wordDiv);
+            });
+        }
+        
+        async function testSystemCapabilities() {
+            const status = document.getElementById('mainStatus');
+            status.textContent = 'Testing system capabilities...';
+            
+            // Test Speech Synthesis
+            const ttsSupport = document.getElementById('ttsSupport');
+            if ('speechSynthesis' in window) {
+                ttsSupport.textContent = '✅ Available';
+                ttsSupport.style.color = 'green';
+                
+                // Count voices
+                const voices = speechSynthesis.getVoices();
+                const voiceCount = document.getElementById('voiceCount');
+                voiceCount.textContent = `${voices.length} voices available`;
+                
+                const arabicVoices = voices.filter(v => v.lang.includes('ar'));
+                if (arabicVoices.length > 0) {
+                    voiceCount.textContent += ` (${arabicVoices.length} Arabic)`;
+                    voiceCount.style.color = 'green';
+                } else {
+                    voiceCount.textContent += ' (No Arabic voices)';
+                    voiceCount.style.color = 'orange';
+                }
+            } else {
+                ttsSupport.textContent = '❌ Not Available';
+                ttsSupport.style.color = 'red';
+            }
+            
+            // Test Web Audio API
+            const audioSupport = document.getElementById('audioSupport');
+            try {
+                audioContext = new (window.AudioContext || window.webkitAudioContext)();
+                audioSupport.textContent = '✅ Available';
+                audioSupport.style.color = 'green';
+            } catch (error) {
+                audioSupport.textContent = '❌ Not Available';
+                audioSupport.style.color = 'red';
+            }
+            
+            // Test MediaRecorder
+            const recordSupport = document.getElementById('recordSupport');
+            if ('MediaRecorder' in window) {
+                recordSupport.textContent = '✅ Available';
+                recordSupport.style.color = 'green';
+            } else {
+                recordSupport.textContent = '❌ Not Available';
+                recordSupport.style.color = 'red';
+            }
+            
+            status.textContent = 'System capabilities tested!';
+        }
+        
+        async function playWordAudio(arabic, transliteration, index) {
+            const method = document.getElementById('audioMethod').value;
+            const rate = parseFloat(document.getElementById('speechRate').value);
+            const button = event.target;
+            const wordItem = button.parentElement;
+            
+            // Stop any current audio
+            if (currentAudio) {
+                try {
+                    currentAudio.pause();
+                    currentAudio = null;
+                } catch (e) {}
+                speechSynthesis.cancel();
+            }
+            
+            // Visual feedback
+            document.querySelectorAll('.word-item').forEach(item => item.classList.remove('playing'));
+            wordItem.classList.add('playing');
+            button.disabled = true;
+            button.textContent = 'Playing...';
+            
+            const status = document.getElementById('mainStatus');
+            status.textContent = `Playing "${arabic}" (${transliteration}) using ${method}...`;
+            
+            try {
+                switch (method) {
+                    case 'tts':
+                        await playTTS(arabic, rate);
+                        break;
+                    case 'beep':
+                        await playBeep(200 + index * 50, 500);
+                        break;
+                    case 'sine':
+                        await playSineWave(440 + index * 110, 600);
+                        break;
+                }
+                
+                status.textContent = `✅ Finished playing "${arabic}"`;
+            } catch (error) {
+                console.error('Playback error:', error);
+                status.textContent = `❌ Error playing "${arabic}": ${error.message}`;
+            } finally {
+                wordItem.classList.remove('playing');
+                button.disabled = false;
+                button.textContent = '🔊 Play';
+            }
+        }
+        
+        function playTTS(text, rate = 0.6) {
+            return new Promise((resolve, reject) => {
+                if (!('speechSynthesis' in window)) {
+                    reject(new Error('Speech synthesis not supported'));
+                    return;
+                }
+                
+                const utterance = new SpeechSynthesisUtterance(text);
+                utterance.lang = 'ar-SA';
+                utterance.rate = rate;
+                utterance.pitch = 1.0;
+                utterance.volume = 0.8;
+                
+                // Try to find Arabic voice
+                const voices = speechSynthesis.getVoices();
+                const arabicVoice = voices.find(voice => 
+                    voice.lang.includes('ar') || voice.name.toLowerCase().includes('arabic')
+                );
+                
+                if (arabicVoice) {
+                    utterance.voice = arabicVoice;
+                }
+                
+                utterance.onend = resolve;
+                utterance.onerror = reject;
+                
+                speechSynthesis.speak(utterance);
+            });
+        }
+        
+        function playBeep(frequency, duration) {
+            return new Promise((resolve, reject) => {
+                try {
+                    if (!audioContext) {
+                        audioContext = new (window.AudioContext || window.webkitAudioContext)();
+                    }
+                    
+                    const oscillator = audioContext.createOscillator();
+                    const gainNode = audioContext.createGain();
+                    
+                    oscillator.connect(gainNode);
+                    gainNode.connect(audioContext.destination);
+                    
+                    oscillator.frequency.value = frequency;
+                    oscillator.type = 'square';
+                    
+                    gainNode.gain.setValueAtTime(0, audioContext.currentTime);
+                    gainNode.gain.linearRampToValueAtTime(0.1, audioContext.currentTime + 0.01);
+                    gainNode.gain.exponentialRampToValueAtTime(0.001, audioContext.currentTime + duration / 1000);
+                    
+                    oscillator.start(audioContext.currentTime);
+                    oscillator.stop(audioContext.currentTime + duration / 1000);
+                    
+                    oscillator.onended = resolve;
+                    setTimeout(resolve, duration + 100);
+                } catch (error) {
+                    reject(error);
+                }
+            });
+        }
+        
+        function playSineWave(frequency, duration) {
+            return new Promise((resolve, reject) => {
+                try {
+                    if (!audioContext) {
+                        audioContext = new (window.AudioContext || window.webkitAudioContext)();
+                    }
+                    
+                    const oscillator = audioContext.createOscillator();
+                    const gainNode = audioContext.createGain();
+                    
+                    oscillator.connect(gainNode);
+                    gainNode.connect(audioContext.destination);
+                    
+                    oscillator.frequency.value = frequency;
+                    oscillator.type = 'sine';
+                    
+                    gainNode.gain.setValueAtTime(0, audioContext.currentTime);
+                    gainNode.gain.linearRampToValueAtTime(0.15, audioContext.currentTime + 0.05);
+                    gainNode.gain.linearRampToValueAtTime(0.05, audioContext.currentTime + duration / 2000);
+                    gainNode.gain.exponentialRampToValueAtTime(0.001, audioContext.currentTime + duration / 1000);
+                    
+                    oscillator.start(audioContext.currentTime);
+                    oscillator.stop(audioContext.currentTime + duration / 1000);
+                    
+                    oscillator.onended = resolve;
+                    setTimeout(resolve, duration + 100);
+                } catch (error) {
+                    reject(error);
+                }
+            });
+        }
+        
+        async function playTestSequence() {
+            const status = document.getElementById('mainStatus');
+            status.textContent = 'Playing test sequence...';
+            
+            for (let i = 0; i < Math.min(4, alFatihaWords.length); i++) {
+                const word = alFatihaWords[i];
+                await playWordAudio(word.arabic, word.transliteration, i);
+                await new Promise(resolve => setTimeout(resolve, 500)); // Pause between words
+            }
+            
+            status.textContent = '✅ Test sequence completed!';
+        }
+        
+        async function generateAllAudio() {
+            const status = document.getElementById('mainStatus');
+            status.textContent = 'This feature will be available in the next update. For now, use the main app with TTS fallback.';
+            
+            // In a future update, this could:
+            // 1. Generate audio for all words
+            // 2. Create downloadable MP3 files
+            // 3. Automatically replace placeholder files
+        }
+    </script>
+</body>
+</html>
