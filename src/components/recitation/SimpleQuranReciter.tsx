@@ -66,7 +66,6 @@ export function SimpleQuranReciter() {
   const [incorrectVerses, setIncorrectVerses] = useState<Set<number>>(new Set())
   const [isListening, setIsListening] = useState(false)
   const [matches, setMatches] = useState<RecitationMatch[]>([])
-  const [lastProcessedLength, setLastProcessedLength] = useState<number>(0)
 
   const { speak } = useTextToSpeech()
 
@@ -76,17 +75,9 @@ export function SimpleQuranReciter() {
     continuous: true,
     interimResults: true,
     onResult: (result) => {
-      // Only process if we have new content since last processing
       const fullTranscript = result.transcript.trim()
-      if (fullTranscript.length > lastProcessedLength) {
-        // Extract only the new part
-        const newPart = fullTranscript.substring(lastProcessedLength).trim()
-        if (newPart) {
-          console.log('🎤 New speech detected:', newPart)
-          handleSpeechResult(newPart)
-          setLastProcessedLength(fullTranscript.length)
-        }
-      }
+      console.log('🎤 Full transcript received:', fullTranscript)
+      handleSpeechResult(fullTranscript)
     },
     onInterimResult: (interimText) => {
       // Process interim results for real-time highlighting
@@ -96,7 +87,6 @@ export function SimpleQuranReciter() {
     },
     onStart: () => {
       setIsListening(true)
-      setLastProcessedLength(0) // Reset processing tracker
     },
     onEnd: () => setIsListening(false),
     onError: (error) => {
@@ -105,13 +95,25 @@ export function SimpleQuranReciter() {
     }
   })
 
-  // Advance to next verse and reset speech processing
+  // Advance to next verse and clear speech recognition
   const advanceToNextVerse = useCallback((nextVerseId: number) => {
     console.log(`🔄 Advancing from verse ${currentVerse} to verse ${nextVerseId}`)
     setCurrentVerse(nextVerseId)
-    setLastProcessedLength(speechRecognition.transcript.length) // Mark current position
+    
+    // Stop and restart speech recognition to clear the transcript
+    if (speechRecognition.isListening) {
+      speechRecognition.stopListening()
+      setTimeout(() => {
+        speechRecognition.clearTranscript()
+        speechRecognition.startListening()
+        console.log('🧹 Restarted speech recognition for new verse')
+      }, 100)
+    } else {
+      speechRecognition.clearTranscript()
+    }
+    
     console.log('🧹 Advanced to new verse (preserved highlights)')
-  }, [currentVerse, speechRecognition.transcript.length])
+  }, [currentVerse, speechRecognition])
 
   // Process final speech recognition results
   const handleSpeechResult = useCallback((transcript: string) => {
@@ -360,7 +362,6 @@ export function SimpleQuranReciter() {
     setIncorrectVerses(new Set())
     setMatches([])
     setCurrentVerse(1)
-    setLastProcessedLength(0)
     speechRecognition.clearTranscript()
   }
 
