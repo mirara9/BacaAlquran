@@ -7,6 +7,8 @@ class QuranReader {
         this.currentWordIndex = 0;
         this.wordsOnCurrentPage = [];
         this.highlightedWords = new Set();
+        this.currentVerseIndex = 0;
+        this.expectedWordIndex = 0;
         this.tajweedEnabled = false;
         this.tajweedRules = this.initializeTajweedRules();
         this.audioContext = null;
@@ -137,10 +139,13 @@ class QuranReader {
         this.wordsOnCurrentPage = [];
         this.highlightedWords.clear();
         this.currentWordIndex = 0;
+        this.currentVerseIndex = 0;
+        this.expectedWordIndex = 0;
         
         pageData.verses.forEach((verse, verseIndex) => {
             const verseDiv = document.createElement('div');
             verseDiv.className = 'verse';
+            verseDiv.setAttribute('data-verse-number', `آية ${verseIndex + 1}`);
             
             const words = verse.arabic.split(' ');
             words.forEach((word, wordIndex) => {
@@ -170,7 +175,10 @@ class QuranReader {
                 this.wordsOnCurrentPage.push({
                     element: wordSpan,
                     text: word,
-                    normalizedText: this.normalizeArabicText(word)
+                    normalizedText: this.normalizeArabicText(word),
+                    verseIndex: verseIndex,
+                    wordIndex: wordIndex,
+                    globalIndex: this.wordsOnCurrentPage.length
                 });
                 
                 // Clear any existing highlights
@@ -227,11 +235,16 @@ class QuranReader {
         const normalizedSpoken = this.normalizeArabicText(spokenWord);
         
         console.log('Looking for word:', spokenWord, '→', normalizedSpoken);
+        console.log('Current verse:', this.currentVerseIndex, 'Expected word:', this.expectedWordIndex);
         
-        for (let i = 0; i < this.wordsOnCurrentPage.length; i++) {
-            const wordData = this.wordsOnCurrentPage[i];
+        // Get words from current verse and next few words for context
+        const searchScope = this.getWordsInSearchScope();
+        
+        for (let i = 0; i < searchScope.length; i++) {
+            const wordData = searchScope[i];
+            const globalIndex = wordData.globalIndex;
             
-            console.log('Comparing with:', wordData.text, '→', wordData.normalizedText);
+            console.log('Comparing with:', wordData.text, '→', wordData.normalizedText, 'in verse', wordData.verseIndex);
             
             // Multiple matching strategies
             const isMatch = 
@@ -245,12 +258,15 @@ class QuranReader {
                 // Root-based matching (remove common prefixes/suffixes)
                 this.rootMatch(normalizedSpoken, wordData.normalizedText);
             
-            if (isMatch && !this.highlightedWords.has(i)) {
-                this.highlightedWords.add(i);
+            if (isMatch && !this.highlightedWords.has(globalIndex)) {
+                this.highlightedWords.add(globalIndex);
+                
+                // Update current position tracking
+                this.updateCurrentPosition(wordData);
                 
                 // Perform tajweed analysis if enabled
                 if (this.tajweedEnabled) {
-                    const mistakes = this.analyzeTajweed(spokenWord, wordData, i);
+                    const mistakes = this.analyzeTajweed(spokenWord, wordData, globalIndex);
                     if (mistakes.length > 0) {
                         wordData.element.classList.add('incorrect');
                         this.showTajweedFeedback(mistakes);
@@ -267,6 +283,54 @@ class QuranReader {
                 break;
             }
         }
+    }
+    
+    getWordsInSearchScope() {
+        // Get words from current verse and allow some flexibility for natural reading
+        const scope = [];
+        
+        // First priority: words from current verse starting from expected position
+        const currentVerseWords = this.wordsOnCurrentPage.filter(word => 
+            word.verseIndex === this.currentVerseIndex
+        );
+        
+        // Add words from expected position onwards in current verse
+        for (let i = this.expectedWordIndex; i < currentVerseWords.length; i++) {
+            scope.push(currentVerseWords[i]);
+        }
+        
+        // If we haven't found enough words or reached end of verse, add from next verse
+        if (scope.length < 3) {
+            const nextVerseWords = this.wordsOnCurrentPage.filter(word => 
+                word.verseIndex === this.currentVerseIndex + 1
+            );
+            scope.push(...nextVerseWords.slice(0, 5)); // Add first 5 words from next verse
+        }
+        
+        // Fallback: if still not enough context, add some previous words for correction
+        if (scope.length < 2 && this.expectedWordIndex > 0) {
+            const prevWords = currentVerseWords.slice(Math.max(0, this.expectedWordIndex - 2), this.expectedWordIndex);
+            scope.unshift(...prevWords);
+        }
+        
+        console.log('Search scope:', scope.map(w => w.text).join(' '));
+        return scope;
+    }
+    
+    updateCurrentPosition(matchedWord) {
+        // Update tracking based on the matched word
+        this.currentVerseIndex = matchedWord.verseIndex;
+        
+        // If we're in the same verse, advance expected word index
+        if (matchedWord.verseIndex === this.currentVerseIndex) {
+            this.expectedWordIndex = Math.max(this.expectedWordIndex, matchedWord.wordIndex + 1);
+        } else {
+            // Moved to new verse
+            this.currentVerseIndex = matchedWord.verseIndex;
+            this.expectedWordIndex = matchedWord.wordIndex + 1;
+        }
+        
+        console.log('Updated position - Verse:', this.currentVerseIndex, 'Expected word:', this.expectedWordIndex);
     }
     
     updateProgress() {
