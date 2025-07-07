@@ -147,10 +147,26 @@ class QuranReader {
     
     normalizeArabicText(text) {
         return text
-            .replace(/[ًٌٍَُِّْ]/g, '') // Remove diacritics
-            .replace(/[۩]/g, '') // Remove special symbols
+            // Remove all diacritics (harakat)
+            .replace(/[ًٌٍَُِّْ]/g, '')
+            // Remove additional diacritics
+            .replace(/[ٰٱٲٳٴٵٶٷٸٹٺٻټٽپٿڀځڂڃڄڅچڇڈډڊڋڌڍڎڏڐڑڒړڔڕږڗژڙښڛڜڝڞڟڠڡڢڣڤڥڦڧڨکڪګڬڭڮگڰڱڲڳڴڵڶڷڸڹںڻڼڽھڿۀہۂۃۄۅۆۇۈۉۊۋیۍێۏېۑےۓ]/g, '')
+            // Remove tatweel (kashida)
+            .replace(/ـ/g, '')
+            // Remove special symbols
+            .replace(/[۩]/g, '')
+            // Normalize common letter variations
+            .replace(/آ/g, 'ا')
+            .replace(/أ/g, 'ا')
+            .replace(/إ/g, 'ا')
+            .replace(/ؤ/g, 'و')
+            .replace(/ئ/g, 'ي')
+            .replace(/ى/g, 'ي')
+            .replace(/ة/g, 'ه')
+            // Remove extra spaces
             .replace(/\s+/g, ' ')
-            .trim();
+            .trim()
+            .toLowerCase();
     }
     
     processSpokenText(spokenText) {
@@ -169,17 +185,31 @@ class QuranReader {
     }
     
     findAndHighlightWord(spokenWord) {
+        const normalizedSpoken = this.normalizeArabicText(spokenWord);
+        
+        console.log('Looking for word:', spokenWord, '→', normalizedSpoken);
+        
         for (let i = 0; i < this.wordsOnCurrentPage.length; i++) {
             const wordData = this.wordsOnCurrentPage[i];
             
-            if (wordData.normalizedText.includes(spokenWord) || 
-                spokenWord.includes(wordData.normalizedText)) {
-                
-                if (!this.highlightedWords.has(i)) {
-                    this.highlightedWords.add(i);
-                    wordData.element.classList.add('highlighted');
-                    console.log('Highlighted word:', wordData.text);
-                }
+            console.log('Comparing with:', wordData.text, '→', wordData.normalizedText);
+            
+            // Multiple matching strategies
+            const isMatch = 
+                // Exact match
+                normalizedSpoken === wordData.normalizedText ||
+                // Contains match (either direction)
+                normalizedSpoken.includes(wordData.normalizedText) ||
+                wordData.normalizedText.includes(normalizedSpoken) ||
+                // Similarity match (at least 70% similar)
+                this.calculateSimilarity(normalizedSpoken, wordData.normalizedText) > 0.7 ||
+                // Root-based matching (remove common prefixes/suffixes)
+                this.rootMatch(normalizedSpoken, wordData.normalizedText);
+            
+            if (isMatch && !this.highlightedWords.has(i)) {
+                this.highlightedWords.add(i);
+                wordData.element.classList.add('highlighted');
+                console.log('✓ Highlighted word:', wordData.text, 'matched with:', spokenWord);
                 break;
             }
         }
@@ -188,6 +218,55 @@ class QuranReader {
     updateProgress() {
         const progress = (this.highlightedWords.size / this.wordsOnCurrentPage.length) * 100;
         this.progressFill.style.width = progress + '%';
+    }
+    
+    calculateSimilarity(str1, str2) {
+        const len1 = str1.length;
+        const len2 = str2.length;
+        
+        if (len1 === 0) return len2 === 0 ? 1 : 0;
+        if (len2 === 0) return 0;
+        
+        const matrix = [];
+        for (let i = 0; i <= len1; i++) {
+            matrix[i] = [i];
+        }
+        for (let j = 0; j <= len2; j++) {
+            matrix[0][j] = j;
+        }
+        
+        for (let i = 1; i <= len1; i++) {
+            for (let j = 1; j <= len2; j++) {
+                const cost = str1[i - 1] === str2[j - 1] ? 0 : 1;
+                matrix[i][j] = Math.min(
+                    matrix[i - 1][j] + 1,
+                    matrix[i][j - 1] + 1,
+                    matrix[i - 1][j - 1] + cost
+                );
+            }
+        }
+        
+        const maxLen = Math.max(len1, len2);
+        return (maxLen - matrix[len1][len2]) / maxLen;
+    }
+    
+    rootMatch(spoken, text) {
+        // Remove common Arabic prefixes and suffixes for root matching
+        const removeAffixes = (word) => {
+            return word
+                .replace(/^(ال|و|ف|ب|ك|ل)/g, '') // Remove common prefixes
+                .replace(/(ها|ان|ات|ون|ين|تم|تن|نا)$/g, '') // Remove common suffixes
+                .replace(/^(است|ت|ن|ي|ا)/g, '') // Remove more prefixes
+                .replace(/(ة|ه)$/g, ''); // Remove ending letters
+        };
+        
+        const spokenRoot = removeAffixes(spoken);
+        const textRoot = removeAffixes(text);
+        
+        return spokenRoot.length >= 2 && textRoot.length >= 2 && 
+               (spokenRoot === textRoot || 
+                spokenRoot.includes(textRoot) || 
+                textRoot.includes(spokenRoot));
     }
     
     checkPageCompletion() {
