@@ -16,6 +16,7 @@
                 <button id="nextPageBtn">Next Page</button>
                 <button id="prevPageBtn">Previous Page</button>
                 <button id="tajweedToggle" class="tajweed-toggle">Enable Tajweed</button>
+                <button id="colorLegendToggle">Show Color Guide</button>
             </div>
             <div style="margin-top: 15px; text-align: center;">
                 <label for="qariSelector" style="color: white; margin-right: 10px;">🎵 Select Qari:</label>
@@ -30,6 +31,42 @@
         <main>
             <div class="page-indicator">
                 <span id="currentPage">1</span> / <span id="totalPages">2</span>
+            </div>
+            
+            <div id="tajweedLegend" class="tajweed-legend">
+                <h3>🎨 Tajweed Color Guide</h3>
+                <div class="legend-item">
+                    <span class="legend-text">Ikhfaa (Concealment)</span>
+                    <div class="legend-color" style="background: #FFE0B2; border-color: #FF9800;"></div>
+                </div>
+                <div class="legend-item">
+                    <span class="legend-text">Idgham (Merging)</span>
+                    <div class="legend-color" style="background: #C8E6C9; border-color: #4CAF50;"></div>
+                </div>
+                <div class="legend-item">
+                    <span class="legend-text">Iqlab (Conversion)</span>
+                    <div class="legend-color" style="background: #F3E5F5; border-color: #9C27B0;"></div>
+                </div>
+                <div class="legend-item">
+                    <span class="legend-text">Izhar (Clear)</span>
+                    <div class="legend-color" style="background: #E1F5FE; border-color: #03A9F4;"></div>
+                </div>
+                <div class="legend-item">
+                    <span class="legend-text">Qalqalah (Echo)</span>
+                    <div class="legend-color" style="background: #FFEBEE; border-color: #F44336;"></div>
+                </div>
+                <div class="legend-item">
+                    <span class="legend-text">Madd (Elongation)</span>
+                    <div class="legend-color" style="background: #F1F8E9; border-color: #66BB6A;"></div>
+                </div>
+                <div class="legend-item">
+                    <span class="legend-text">Heavy Letters</span>
+                    <div class="legend-color" style="background: #FFF3E0; border-color: #BF360C;"></div>
+                </div>
+                <div class="legend-item">
+                    <span class="legend-text">Shaddah (Emphasis)</span>
+                    <div class="legend-color" style="background: #E8EAF6; border-color: #1A237E;"></div>
+                </div>
             </div>
             
             <div class="quran-text" id="quranText">

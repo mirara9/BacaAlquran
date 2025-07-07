@@ -55,7 +55,9 @@ class QuranReader {
             qariSelector: 'qariSelector',
             audioStatus: 'audioStatus',
             audioStatusIcon: 'audioStatusIcon',
-            audioStatusText: 'audioStatusText'
+            audioStatusText: 'audioStatusText',
+            colorLegendToggle: 'colorLegendToggle',
+            tajweedLegend: 'tajweedLegend'
         };
         
         let missingElements = [];
@@ -142,6 +144,7 @@ class QuranReader {
         this.nextPageBtn.addEventListener('click', () => this.nextPage());
         this.prevPageBtn.addEventListener('click', () => this.prevPage());
         this.tajweedToggle.addEventListener('click', () => this.toggleTajweed());
+        this.colorLegendToggle.addEventListener('click', () => this.toggleColorLegend());
         this.qariSelector.addEventListener('change', (e) => this.changeQari(e.target.value));
     }
     
@@ -178,16 +181,17 @@ class QuranReader {
         pageData.verses.forEach((verse, verseIndex) => {
             const verseDiv = document.createElement('div');
             verseDiv.className = 'verse';
-            verseDiv.setAttribute('data-verse-number', `آية ${verseIndex + 1}`);
             
             const words = verse.arabic.split(' ');
             words.forEach((word, wordIndex) => {
                 const wordSpan = document.createElement('span');
                 wordSpan.className = 'word';
-                wordSpan.textContent = word;
                 wordSpan.dataset.verseIndex = verseIndex;
                 wordSpan.dataset.wordIndex = wordIndex;
                 wordSpan.dataset.globalIndex = this.wordsOnCurrentPage.length;
+                
+                // Apply Tajweed color coding to each letter
+                this.applyTajweedColoring(wordSpan, word, verseIndex, wordIndex);
                 
                 // Add refresh button
                 const refreshBtn = document.createElement('button');
@@ -763,6 +767,177 @@ class QuranReader {
         }
         
         return true; // Default to correct to reduce false positives
+    }
+    
+    applyTajweedColoring(wordSpan, word, verseIndex, wordIndex) {
+        // Split word into individual letters for precise coloring
+        const letters = Array.from(word);
+        
+        letters.forEach((letter, letterIndex) => {
+            const letterSpan = document.createElement('span');
+            letterSpan.className = 'letter';
+            letterSpan.textContent = letter;
+            
+            // Apply Tajweed coloring based on letter and context
+            const tajweedClass = this.getTajweedClassForLetter(letter, letters, letterIndex, word);
+            if (tajweedClass) {
+                letterSpan.classList.add(tajweedClass);
+            }
+            
+            wordSpan.appendChild(letterSpan);
+        });
+    }
+    
+    getTajweedClassForLetter(letter, letters, letterIndex, word) {
+        const normalizedLetter = this.normalizeArabicText(letter);
+        const nextLetter = letterIndex < letters.length - 1 ? letters[letterIndex + 1] : '';
+        const prevLetter = letterIndex > 0 ? letters[letterIndex - 1] : '';
+        
+        // Heavy/Emphatic letters (حروف الاستعلاء)
+        const heavyLetters = ['ص', 'ض', 'ط', 'ظ', 'ق', 'خ', 'غ'];
+        if (heavyLetters.includes(normalizedLetter)) {
+            return 'tajweed-heavy';
+        }
+        
+        // Qalqalah letters (قلقلة) - only when they have sukun
+        const qalqalahLetters = ['ق', 'ط', 'ب', 'ج', 'د'];
+        if (qalqalahLetters.includes(normalizedLetter)) {
+            // Check if letter has sukun or is at word end
+            const hasSukun = nextLetter === '\u0652' || letterIndex === letters.length - 1;
+            if (hasSukun) {
+                return 'tajweed-qalqalah';
+            }
+        }
+        
+        // Noon Sakinah and Tanween rules
+        if (normalizedLetter === 'ن' && nextLetter === '\u0652') { // ن with sukun
+            const letterAfterNext = letterIndex + 2 < letters.length ? letters[letterIndex + 2] : '';
+            return this.getNoonSakinahClass(letterAfterNext);
+        }
+        
+        // Tanween (double vowel marks)
+        if (['\u064B', '\u064C', '\u064D'].includes(letter)) { // fathatan, dammatan, kasratan
+            const nextMeaningfulLetter = this.getNextMeaningfulLetter(letters, letterIndex);
+            return this.getNoonSakinahClass(nextMeaningfulLetter);
+        }
+        
+        // Meem Sakinah rules
+        if (normalizedLetter === 'م' && nextLetter === '\u0652') { // م with sukun
+            const letterAfterNext = letterIndex + 2 < letters.length ? letters[letterIndex + 2] : '';
+            return this.getMeemSakinahClass(letterAfterNext);
+        }
+        
+        // Madd (elongation) letters
+        const maddLetters = ['ا', 'و', 'ي'];
+        if (maddLetters.includes(normalizedLetter)) {
+            return this.getMaddClass(letter, letters, letterIndex, word);
+        }
+        
+        // Shaddah (emphasis mark)
+        if (letter === '\u0651') { // shaddah mark
+            return 'tajweed-shaddah';
+        }
+        
+        // Sukun mark
+        if (letter === '\u0652') {
+            return 'tajweed-sukun';
+        }
+        
+        // Lam-Alif combinations
+        if (normalizedLetter === 'ل' && letterIndex < letters.length - 1) {
+            const nextNormalized = this.normalizeArabicText(letters[letterIndex + 1]);
+            if (nextNormalized === 'ا') {
+                return 'tajweed-lam-alif';
+            }
+        }
+        
+        return null; // No special coloring needed
+    }
+    
+    getNoonSakinahClass(followingLetter) {
+        const normalized = this.normalizeArabicText(followingLetter);
+        
+        // Ikhfaa letters (إخفاء)
+        const ikhfaaLetters = ['ت', 'ث', 'ج', 'د', 'ذ', 'ز', 'س', 'ش', 'ص', 'ض', 'ط', 'ظ', 'ف', 'ق', 'ك'];
+        if (ikhfaaLetters.includes(normalized)) {
+            return 'tajweed-ikhfaa';
+        }
+        
+        // Idgham letters (إدغام)
+        const idghamLetters = ['ي', 'ر', 'م', 'ل', 'و', 'ن'];
+        if (idghamLetters.includes(normalized)) {
+            // Check if it's with ghunnah
+            const ghunnahLetters = ['ي', 'ن', 'م', 'و'];
+            if (ghunnahLetters.includes(normalized)) {
+                return 'tajweed-idgham-ghunnah';
+            }
+            return 'tajweed-idgham';
+        }
+        
+        // Iqlab (إقلاب) - conversion to meem before ba
+        if (normalized === 'ب') {
+            return 'tajweed-iqlab';
+        }
+        
+        // Izhar (إظهار) - clear pronunciation
+        const izharLetters = ['ء', 'هـ', 'ع', 'ح', 'غ', 'خ'];
+        if (izharLetters.includes(normalized)) {
+            return 'tajweed-izhar';
+        }
+        
+        return null;
+    }
+    
+    getMeemSakinahClass(followingLetter) {
+        const normalized = this.normalizeArabicText(followingLetter);
+        
+        // Ikhfaa Shafawi (إخفاء شفوي) - before ba
+        if (normalized === 'ب') {
+            return 'tajweed-ikhfaa-shafawi';
+        }
+        
+        // Idgham Shafawi (إدغام شفوي) - before another meem
+        if (normalized === 'م') {
+            return 'tajweed-idgham-shafawi';
+        }
+        
+        // Izhar Shafawi (إظهار شفوي) - before all other letters
+        return 'tajweed-izhar-shafawi';
+    }
+    
+    getMaddClass(letter, letters, letterIndex, word) {
+        const nextLetter = letterIndex < letters.length - 1 ? letters[letterIndex + 1] : '';
+        
+        // Check for hamza after madd letter (Madd Munfasil or Muttasil)
+        if (nextLetter === 'ء' || nextLetter === 'أ' || nextLetter === 'إ') {
+            // This is a simplified check - in reality, you'd need more context
+            return 'tajweed-madd-muttasil';
+        }
+        
+        // Basic madd
+        return 'tajweed-madd';
+    }
+    
+    getNextMeaningfulLetter(letters, currentIndex) {
+        // Skip vowel marks and find next meaningful letter
+        for (let i = currentIndex + 1; i < letters.length; i++) {
+            const letter = letters[i];
+            // Skip diacritics
+            if (!/[\u064B-\u0652]/.test(letter)) {
+                return letter;
+            }
+        }
+        return '';
+    }
+    
+    toggleColorLegend() {
+        this.tajweedLegend.classList.toggle('show');
+        
+        if (this.tajweedLegend.classList.contains('show')) {
+            this.colorLegendToggle.textContent = 'Hide Color Guide';
+        } else {
+            this.colorLegendToggle.textContent = 'Show Color Guide';
+        }
     }
     
     getPhoneticPronunciation(arabicWord) {

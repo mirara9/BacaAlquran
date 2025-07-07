@@ -109,30 +109,6 @@ main {
     transition: all 0.3s ease;
 }
 
-.verse::before {
-    content: attr(data-verse-number);
-    position: absolute;
-    top: -12px;
-    right: 15px;
-    background: linear-gradient(135deg, #4CAF50 0%, #66BB6A 100%);
-    color: white;
-    padding: 6px 12px;
-    border-radius: 20px;
-    font-size: 0.7em;
-    font-weight: bold;
-    box-shadow: 0 3px 10px rgba(76, 175, 80, 0.3);
-    z-index: 5;
-}
-
-.verse:nth-child(odd)::before {
-    background: linear-gradient(135deg, #2196F3 0%, #42A5F5 100%);
-    box-shadow: 0 3px 10px rgba(33, 150, 243, 0.3);
-}
-
-.verse:nth-child(even)::before {
-    background: linear-gradient(135deg, #9C27B0 0%, #BA68C8 100%);
-    box-shadow: 0 3px 10px rgba(156, 39, 176, 0.3);
-}
 
 .verse:hover {
     background: rgba(255, 255, 255, 0.9);
@@ -237,6 +213,183 @@ main {
 .word.highlighted .word-refresh,
 .word.incorrect .word-refresh {
     display: flex;
+}
+
+/* Tajweed Color Coding */
+.letter {
+    position: relative;
+    transition: all 0.2s ease;
+}
+
+/* Noon Sakinah and Tanween Rules */
+.tajweed-ikhfaa {
+    background: #FFE0B2; /* Light Orange - Concealment */
+    color: #E65100;
+    border-bottom: 2px solid #FF9800;
+}
+
+.tajweed-idgham {
+    background: #C8E6C9; /* Light Green - Merging */
+    color: #1B5E20;
+    border-bottom: 2px solid #4CAF50;
+}
+
+.tajweed-idgham-ghunnah {
+    background: #C8E6C9; /* Light Green with extra marking */
+    color: #1B5E20;
+    border-bottom: 2px solid #4CAF50;
+    box-shadow: 0 2px 0 #4CAF50;
+}
+
+.tajweed-iqlab {
+    background: #F3E5F5; /* Light Purple - Conversion */
+    color: #4A148C;
+    border-bottom: 2px solid #9C27B0;
+}
+
+.tajweed-izhar {
+    background: #E1F5FE; /* Light Blue - Clear pronunciation */
+    color: #01579B;
+    border-bottom: 2px solid #03A9F4;
+}
+
+/* Meem Sakinah Rules */
+.tajweed-ikhfaa-shafawi {
+    background: #FFECB3; /* Light Yellow - Labial concealment */
+    color: #F57F17;
+    border-bottom: 2px solid #FFC107;
+}
+
+.tajweed-idgham-shafawi {
+    background: #DCEDC8; /* Light Lime - Labial merging */
+    color: #33691E;
+    border-bottom: 2px solid #8BC34A;
+}
+
+.tajweed-izhar-shafawi {
+    background: #E0F2F1; /* Light Teal - Clear labial */
+    color: #004D40;
+    border-bottom: 2px solid #009688;
+}
+
+/* Qalqalah */
+.tajweed-qalqalah {
+    background: #FFEBEE; /* Light Red - Echo/Bounce */
+    color: #B71C1C;
+    border-bottom: 2px solid #F44336;
+    font-weight: bold;
+}
+
+/* Madd (Elongation) */
+.tajweed-madd {
+    background: #F1F8E9; /* Very Light Green - Elongation */
+    color: #2E7D32;
+    border-bottom: 2px solid #66BB6A;
+    letter-spacing: 2px;
+}
+
+.tajweed-madd-munfasil {
+    background: #F1F8E9;
+    color: #2E7D32;
+    border-bottom: 3px solid #66BB6A;
+    letter-spacing: 3px;
+}
+
+.tajweed-madd-muttasil {
+    background: #F1F8E9;
+    color: #2E7D32;
+    border-bottom: 4px solid #66BB6A;
+    letter-spacing: 4px;
+}
+
+/* Heavy/Emphatic Letters */
+.tajweed-heavy {
+    background: #FFF3E0; /* Light Deep Orange */
+    color: #BF360C;
+    font-weight: 600;
+}
+
+/* Light Letters */
+.tajweed-light {
+    background: #F9FBE7; /* Very Light Lime */
+    color: #827717;
+}
+
+/* Lam-Alif */
+.tajweed-lam-alif {
+    background: linear-gradient(135deg, #E8F5E8 0%, #C8E6C9 100%);
+    color: #1B5E20;
+    border-bottom: 2px solid #4CAF50;
+}
+
+/* Sukun */
+.tajweed-sukun {
+    background: #FAFAFA; /* Light Gray */
+    color: #424242;
+    border-top: 2px solid #9E9E9E;
+}
+
+/* Shaddah */
+.tajweed-shaddah {
+    background: #E8EAF6; /* Light Indigo */
+    color: #1A237E;
+    font-weight: bold;
+    text-shadow: 1px 1px 2px rgba(63, 81, 181, 0.3);
+}
+
+/* Waqf (Stop marks) */
+.tajweed-waqf {
+    background: #FCE4EC; /* Light Pink */
+    color: #880E4F;
+    border-radius: 4px;
+    padding: 2px 4px;
+}
+
+/* Hover effects for Tajweed letters */
+.letter:hover {
+    transform: scale(1.1);
+    z-index: 10;
+}
+
+/* Tajweed legend can be toggled */
+.tajweed-legend {
+    background: rgba(255, 255, 255, 0.95);
+    border: 2px solid #e0e0e0;
+    border-radius: 10px;
+    padding: 20px;
+    margin: 20px 0;
+    display: none;
+}
+
+.tajweed-legend.show {
+    display: block;
+}
+
+.tajweed-legend h3 {
+    color: #2c3e50;
+    margin-bottom: 15px;
+    text-align: center;
+}
+
+.legend-item {
+    display: flex;
+    align-items: center;
+    margin: 8px 0;
+    padding: 5px;
+    border-radius: 5px;
+}
+
+.legend-color {
+    width: 20px;
+    height: 20px;
+    border-radius: 3px;
+    margin-left: 10px;
+    border: 1px solid #ccc;
+}
+
+.legend-text {
+    font-weight: 500;
+    color: #333;
 }
 
 /* Mobile Responsive Design */
