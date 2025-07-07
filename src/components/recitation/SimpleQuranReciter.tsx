@@ -165,39 +165,53 @@ export function SimpleQuranReciter() {
     console.log('🎤 Full Speech Result:', transcript)
     console.log('🎯 Current Expected Verse:', currentVerse)
     
-    // NEW LOGIC: Focus on current verse first, then check for progression
-    const currentVerseData = AL_FATIHA_VERSES.find(v => v.id === currentVerse)
-    if (!currentVerseData) return
-
-    // Check if current verse is being recited correctly
-    const currentVerseSimilarity = calculateArabicSimilarity(transcript, currentVerseData.arabic)
-    console.log(`🔍 Current verse ${currentVerse} similarity: ${currentVerseSimilarity}%`)
-
     // PRESERVE previous highlights - don't reset them
     const newHighlighted = new Set(highlightedVerses)
     const newIncorrect = new Set(incorrectVerses)
     let allMatches: RecitationMatch[] = [...matches] // Keep previous matches too
+    let highestVerseFound = currentVerse - 1
 
-    // Primary check: Is user reading the current expected verse?
-    if (currentVerseSimilarity >= 75) {
-      newHighlighted.add(currentVerse)
-      newIncorrect.delete(currentVerse)
-      console.log(`✅ Current verse ${currentVerse} marked as correct (${currentVerseSimilarity}%)`)
+    // NEW LOGIC: Check for multiple verses in sequence
+    console.log('🔍 Checking for multiple verses in transcript...')
+    
+    // Check each verse from current onwards to see if it's in the transcript
+    const versesToCheck = AL_FATIHA_VERSES.filter(v => v.id >= currentVerse)
+    let foundSequentialVerses: number[] = []
+    
+    for (const verse of versesToCheck) {
+      const similarity = calculateArabicSimilarity(transcript, verse.arabic)
+      console.log(`🔍 Verse ${verse.id} similarity: ${similarity}%`)
       
-      allMatches.push({
-        verseId: currentVerse,
-        matchedText: transcript,
-        similarity: currentVerseSimilarity,
-        isCorrect: true
-      })
+      if (similarity >= 75) {
+        newHighlighted.add(verse.id)
+        newIncorrect.delete(verse.id)
+        foundSequentialVerses.push(verse.id)
+        highestVerseFound = Math.max(highestVerseFound, verse.id)
+        
+        console.log(`✅ Verse ${verse.id} marked as correct (${similarity}%)`)
+        
+        allMatches.push({
+          verseId: verse.id,
+          matchedText: transcript,
+          similarity,
+          isCorrect: true
+        })
+      }
+    }
 
-      // Advance to next verse and clear transcript
-      const nextVerse = AL_FATIHA_VERSES.find(v => v.id === currentVerse + 1)
-      if (nextVerse) {
-        advanceToNextVerse(nextVerse.id)
+    // If we found multiple verses, log it
+    if (foundSequentialVerses.length > 1) {
+      console.log(`🎯 Multiple verses detected: ${foundSequentialVerses.join(', ')}`)
+    }
+
+    // If we found any verses, advance to the next unread verse
+    if (foundSequentialVerses.length > 0) {
+      const nextVerseId = Math.min(highestVerseFound + 1, AL_FATIHA_VERSES.length)
+      if (nextVerseId <= AL_FATIHA_VERSES.length) {
+        advanceToNextVerse(nextVerseId)
       }
     } else {
-      // Secondary check: Are they reading ahead or catching up?
+      // Fallback: try the segmentation approach for complex cases
       const verseSegments = extractVerseSegments(transcript)
       console.log('📝 Extracted Verse Segments:', verseSegments)
       
@@ -235,10 +249,14 @@ export function SimpleQuranReciter() {
         })
       })
 
-      // If no valid matches found for current verse, only mark as incorrect if similarity is very low
-      if (!foundValidMatch && currentVerseSimilarity < 40) {
-        console.log(`❌ Current verse ${currentVerse} marked as incorrect (${currentVerseSimilarity}%)`)
-        // Don't automatically mark as incorrect - let user try again
+      // If no valid matches found, check if similarity is very low
+      const currentVerseData = AL_FATIHA_VERSES.find(v => v.id === currentVerse)
+      if (!foundValidMatch && currentVerseData) {
+        const currentVerseSimilarity = calculateArabicSimilarity(transcript, currentVerseData.arabic)
+        if (currentVerseSimilarity < 40) {
+          console.log(`❌ Current verse ${currentVerse} marked as incorrect (${currentVerseSimilarity}%)`)
+          // Don't automatically mark as incorrect - let user try again
+        }
       }
     }
     
@@ -246,7 +264,7 @@ export function SimpleQuranReciter() {
     setIncorrectVerses(newIncorrect)
     setMatches(allMatches)
     
-  }, [currentVerse, highlightedVerses, incorrectVerses])
+  }, [currentVerse, highlightedVerses, incorrectVerses, matches, advanceToNextVerse])
 
   // Extract individual verse segments from continuous speech
   const extractVerseSegments = (transcript: string): { text: string; startIndex: number }[] => {
