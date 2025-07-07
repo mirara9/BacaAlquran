@@ -66,16 +66,31 @@ export function SimpleQuranReciter() {
   const [incorrectVerses, setIncorrectVerses] = useState<Set<number>>(new Set())
   const [isListening, setIsListening] = useState(false)
   const [matches, setMatches] = useState<RecitationMatch[]>([])
+  const [currentTranscript, setCurrentTranscript] = useState<string>('')
 
   const { speak } = useTextToSpeech()
 
-  // Speech recognition with real-time processing
+  // Clear transcript when advancing to new verse
+  const advanceToNextVerse = useCallback((nextVerseId: number) => {
+    console.log(`🔄 Advancing from verse ${currentVerse} to verse ${nextVerseId}`)
+    setCurrentVerse(nextVerseId)
+    setCurrentTranscript('') // Clear previous speech
+    setMatches([]) // Clear previous matches
+    console.log('🧹 Cleared transcript for new verse')
+  }, [currentVerse])
+
+  // Speech recognition with chunked processing
   const speechRecognition = useRealtimeSpeechRecognition({
     language: 'ar-SA',
     continuous: true,
     interimResults: true,
     onResult: (result) => {
-      handleSpeechResult(result.transcript)
+      // Process only new speech since last verse completion
+      const newTranscript = result.transcript.trim()
+      setCurrentTranscript(newTranscript)
+      
+      // Process the latest speech for current verse
+      handleSpeechResult(newTranscript)
     },
     onInterimResult: (interimText) => {
       // Process interim results for real-time highlighting
@@ -83,7 +98,10 @@ export function SimpleQuranReciter() {
         processInterimSpeech(interimText)
       }
     },
-    onStart: () => setIsListening(true),
+    onStart: () => {
+      setIsListening(true)
+      setCurrentTranscript('') // Clear on start
+    },
     onEnd: () => setIsListening(false),
     onError: (error) => {
       console.error('Speech recognition error:', error)
@@ -123,11 +141,10 @@ export function SimpleQuranReciter() {
         isCorrect: true
       })
 
-      // Advance to next verse
+      // Advance to next verse and clear transcript
       const nextVerse = AL_FATIHA_VERSES.find(v => v.id === currentVerse + 1)
       if (nextVerse) {
-        setCurrentVerse(nextVerse.id)
-        console.log(`⏭️ Advanced to verse ${nextVerse.id}`)
+        advanceToNextVerse(nextVerse.id)
       }
     } else {
       // Secondary check: Are they reading ahead or catching up?
@@ -161,7 +178,8 @@ export function SimpleQuranReciter() {
 
             // Update current verse to the highest correctly read verse
             if (verse.id >= currentVerse) {
-              setCurrentVerse(Math.min(verse.id + 1, AL_FATIHA_VERSES.length))
+              const nextVerseId = Math.min(verse.id + 1, AL_FATIHA_VERSES.length)
+              advanceToNextVerse(nextVerseId)
             }
           }
         })
