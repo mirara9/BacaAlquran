@@ -154,11 +154,19 @@ export function matchSpokenWords(
   // Determine next expected word
   const nextExpectedWord = currentIndex < expectedWords.length ? expectedWords[currentIndex] : undefined
   
+  console.log('Word matching result:', {
+    matchedCount,
+    totalWords: spokenWords.length,
+    accuracy,
+    highlightedWords: highlightedWords.length,
+    incorrectWords: incorrectWords.length
+  })
+  
   return {
     matches,
     currentWordIndex: currentIndex,
-    highlightedWords,
-    incorrectWords,
+    highlightedWords, // Green - correctly recited words
+    incorrectWords,   // Red - incorrectly recited words
     accuracy,
     nextExpectedWord
   }

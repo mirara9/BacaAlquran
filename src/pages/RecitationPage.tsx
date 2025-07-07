@@ -7,7 +7,7 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/Card'
 import { Progress } from '@/components/ui/Progress'
 import { RealtimeRecorder } from '@/components/audio/RealtimeRecorder'
 import { MicrophoneTest } from '@/components/debug/MicrophoneTest'
-import { QuranDisplay } from '@/components/quran/QuranDisplay'
+import { ContinuousQuranDisplay } from '@/components/quran/ContinuousQuranDisplay'
 import { useRealtimeSpeechRecognition } from '@/hooks/useRealtimeSpeechRecognition'
 import { useAudioPlayer, useTextToSpeech } from '@/hooks/useAudioPlayer'
 import { useAppActions, useCurrentSession } from '@/stores/appStore'
@@ -371,14 +371,13 @@ export default function RecitationPage() {
               </CardContent>
             </Card>
 
-            {/* Quran Display */}
-            <QuranDisplay
+            {/* Continuous Quran Display */}
+            <ContinuousQuranDisplay
               verses={mockVerses}
               currentVerseId={currentVerseId}
               highlightedWords={highlightedWords}
               currentWordId={currentWordId}
               incorrectWords={incorrectWords}
-              onVerseSelect={handleVerseSelect}
               onPlayAudio={handlePlayAudio}
             />
           </div>

@@ -138,9 +138,9 @@ export function RealtimeRecorder({
               
               {interimTranscript && (
                 <div>
-                  <p className="text-sm font-medium text-gray-700 mb-1">Currently hearing:</p>
-                  <div className="bg-blue-50 p-3 rounded border rtl text-right">
-                    <p className="arabic-text text-lg leading-relaxed text-blue-700 italic">
+                  <p className="text-sm font-medium text-gray-700 mb-1">Processing speech...</p>
+                  <div className="bg-gray-50 p-3 rounded border rtl text-right">
+                    <p className="arabic-text text-lg leading-relaxed text-gray-700 italic">
                       {interimTranscript}
                     </p>
                   </div>
