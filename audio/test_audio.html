@@ -1,0 +1,223 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Audio Test - Quran Reader</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            padding: 20px;
+            background: #f5f5f5;
+        }
+        .test-section {
+            background: white;
+            padding: 20px;
+            margin: 20px 0;
+            border-radius: 10px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+        }
+        button {
+            padding: 10px 20px;
+            margin: 5px;
+            border: none;
+            border-radius: 5px;
+            background: #4CAF50;
+            color: white;
+            cursor: pointer;
+            font-size: 14px;
+        }
+        button:hover {
+            background: #45a049;
+        }
+        button:disabled {
+            background: #ccc;
+            cursor: not-allowed;
+        }
+        .playing {
+            background: #ff9800 !important;
+        }
+        .qari-section {
+            border-left: 4px solid #4CAF50;
+            padding-left: 15px;
+            margin: 15px 0;
+        }
+        .status {
+            margin: 10px 0;
+            padding: 10px;
+            background: #e8f5e8;
+            border-radius: 5px;
+            font-weight: bold;
+        }
+    </style>
+</head>
+<body>
+    <h1>🎵 Quran Reader - Audio System Test</h1>
+    
+    <div class="test-section">
+        <h2>📁 Local Audio Files Test</h2>
+        <div class="status" id="audioStatus">Ready to test audio files...</div>
+        
+        <div class="qari-section">
+            <h3>🕌 Sheikh Abdul Basit Abdul Samad (Mujawwad)</h3>
+            <button onclick="testAudio('abdul_basit', '001_001_001.mp3', 'بِسْمِ')">Play "بِسْمِ" (Bismi)</button>
+            <button onclick="testAudio('abdul_basit', '001_001_002.mp3', 'اللَّهِ')">Play "اللَّهِ" (Allahi)</button>
+            <button onclick="testAudio('abdul_basit', '001_002_002.mp3', 'لِلَّهِ')">Play "لِلَّهِ" (Lillahi)</button>
+        </div>
+        
+        <div class="qari-section">
+            <h3>🕌 Sheikh Mishary Rashid Alafasy (Murattal)</h3>
+            <button onclick="testAudio('mishary', '001_001_001.mp3', 'بِسْمِ')">Play "بِسْمِ" (Bismi)</button>
+            <button onclick="testAudio('mishary', '001_001_002.mp3', 'اللَّهِ')">Play "اللَّهِ" (Allahi)</button>
+            <button onclick="testAudio('mishary', '001_002_002.mp3', 'لِلَّهِ')">Play "لِلَّهِ" (Lillahi)</button>
+        </div>
+        
+        <div class="qari-section">
+            <h3>🕌 Sheikh Abdul Rahman Al-Sudais (Clear)</h3>
+            <button onclick="testAudio('sudais', '001_001_001.mp3', 'بِسْمِ')">Play "بِسْمِ" (Bismi)</button>
+            <button onclick="testAudio('sudais', '001_001_002.mp3', 'اللَّهِ')">Play "اللَّهِ" (Allahi)</button>
+            <button onclick="testAudio('sudais', '001_002_002.mp3', 'لِلَّهِ')">Play "لِلَّهِ" (Lillahi)</button>
+        </div>
+    </div>
+    
+    <div class="test-section">
+        <h2>🔧 System Information</h2>
+        <div id="systemInfo">
+            <p><strong>Audio Support:</strong> <span id="audioSupport"></span></p>
+            <p><strong>Local Files:</strong> <span id="localFiles"></span></p>
+            <p><strong>Performance:</strong> <span id="performance"></span></p>
+        </div>
+    </div>
+    
+    <div class="test-section">
+        <h2>📝 Instructions for Real Audio</h2>
+        <ol>
+            <li><strong>Download High-Quality Recordings:</strong> Get MP3 files from authentic sources</li>
+            <li><strong>Organize by Qari:</strong> Place files in respective qari directories</li>
+            <li><strong>Use Correct Naming:</strong> Follow the pattern: 001_002_003.mp3 (surah_verse_word)</li>
+            <li><strong>Test Playback:</strong> Use this page to verify all files work correctly</li>
+            <li><strong>Optimize Size:</strong> Use compressed MP3 files (128kbps recommended for balance)</li>
+        </ol>
+        
+        <h3>📂 Expected Directory Structure:</h3>
+        <pre style="background: #f8f8f8; padding: 15px; border-radius: 5px; overflow-x: auto;">
+audio/
+├── qaris/
+│   ├── abdul_basit/
+│   │   ├── 001_001_001.mp3 (بِسْمِ)
+│   │   ├── 001_001_002.mp3 (اللَّهِ)
+│   │   └── ...
+│   ├── mishary/
+│   │   ├── 001_001_001.mp3
+│   │   └── ...
+│   └── sudais/
+│       ├── 001_001_001.mp3
+│       └── ...
+├── audio_manifest.json
+└── test_audio.html (this file)
+        </pre>
+    </div>
+
+    <script>
+        let currentAudio = null;
+        
+        function testAudio(qari, filename, arabicWord) {
+            // Stop any currently playing audio
+            if (currentAudio) {
+                currentAudio.pause();
+                currentAudio = null;
+                // Remove playing class from all buttons
+                document.querySelectorAll('button').forEach(btn => btn.classList.remove('playing'));
+            }
+            
+            const audioPath = `qaris/${qari}/${filename}`;
+            const statusDiv = document.getElementById('audioStatus');
+            const button = event.target;
+            
+            // Visual feedback
+            button.classList.add('playing');
+            button.disabled = true;
+            button.textContent = 'Playing...';
+            statusDiv.textContent = `🎵 Playing ${arabicWord} from ${qari}...`;
+            
+            // Create and play audio
+            currentAudio = new Audio(audioPath);
+            
+            currentAudio.onloadstart = () => {
+                statusDiv.textContent = `📥 Loading ${arabicWord} from ${qari}...`;
+            };
+            
+            currentAudio.oncanplaythrough = () => {
+                statusDiv.textContent = `🎵 Playing ${arabicWord} from ${qari}`;
+            };
+            
+            currentAudio.onended = () => {
+                button.classList.remove('playing');
+                button.disabled = false;
+                button.textContent = button.textContent.replace('Playing...', `Play "${arabicWord}"`);
+                statusDiv.textContent = `✅ Finished playing ${arabicWord}`;
+                currentAudio = null;
+            };
+            
+            currentAudio.onerror = (error) => {
+                button.classList.remove('playing');
+                button.disabled = false;
+                button.textContent = button.textContent.replace('Playing...', `Play "${arabicWord}"`);
+                statusDiv.textContent = `❌ Error: Could not load ${audioPath}. File may not exist.`;
+                console.error('Audio error:', error);
+                currentAudio = null;
+            };
+            
+            // Attempt to play
+            currentAudio.play().catch(error => {
+                button.classList.remove('playing');
+                button.disabled = false;
+                button.textContent = button.textContent.replace('Playing...', `Play "${arabicWord}"`);
+                statusDiv.textContent = `❌ Playback failed: ${error.message}`;
+                console.error('Playback error:', error);
+            });
+        }
+        
+        // Check system capabilities
+        function checkSystemInfo() {
+            const audioSupport = document.getElementById('audioSupport');
+            const localFiles = document.getElementById('localFiles');
+            const performance = document.getElementById('performance');
+            
+            // Audio support
+            const audio = new Audio();
+            const mp3Support = audio.canPlayType('audio/mpeg');
+            audioSupport.textContent = mp3Support ? `✅ MP3 Supported (${mp3Support})` : '❌ MP3 Not Supported';
+            
+            // Local file access
+            localFiles.textContent = '🔍 Testing local file access...';
+            
+            // Test a sample file
+            const testAudio = new Audio('qaris/abdul_basit/001_001_001.mp3');
+            testAudio.onloadstart = () => {
+                localFiles.textContent = '✅ Local files accessible';
+            };
+            testAudio.onerror = () => {
+                localFiles.textContent = '❌ Local files not found - upload audio files';
+            };
+            
+            // Performance info
+            performance.textContent = `Cache: ${navigator.storage ? '✅ Available' : '❌ Limited'} | Connection: ${navigator.onLine ? '🌐 Online' : '📱 Offline'}`;
+        }
+        
+        // Initialize on page load
+        document.addEventListener('DOMContentLoaded', checkSystemInfo);
+        
+        // Update connection status
+        window.addEventListener('online', () => {
+            document.getElementById('performance').innerHTML = 
+                document.getElementById('performance').innerHTML.replace(/Connection: [^|]+/, 'Connection: 🌐 Online');
+        });
+        
+        window.addEventListener('offline', () => {
+            document.getElementById('performance').innerHTML = 
+                document.getElementById('performance').innerHTML.replace(/Connection: [^|]+/, 'Connection: 📱 Offline');
+        });
+    </script>
+</body>
+</html>

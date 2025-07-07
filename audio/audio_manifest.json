@@ -1,0 +1,211 @@
+{
+  "surah_1": {
+    "name": "Al-Fatiha",
+    "verses": [
+      {
+        "verse_number": 1,
+        "arabic": "بِسْمِ اللَّهِ الرَّحْمَنِ الرَّحِيمِ",
+        "words": [
+          {
+            "word": "بِسْمِ",
+            "audio": "001_001_001.mp3",
+            "transliteration": "bismi"
+          },
+          {
+            "word": "اللَّهِ",
+            "audio": "001_001_002.mp3",
+            "transliteration": "allahi"
+          },
+          {
+            "word": "الرَّحْمَنِ",
+            "audio": "001_001_003.mp3",
+            "transliteration": "ar-rahmani"
+          },
+          {
+            "word": "الرَّحِيمِ",
+            "audio": "001_001_004.mp3",
+            "transliteration": "ar-raheem"
+          }
+        ]
+      },
+      {
+        "verse_number": 2,
+        "arabic": "الْحَمْدُ لِلَّهِ رَبِّ الْعَالَمِينَ",
+        "words": [
+          {
+            "word": "الْحَمْدُ",
+            "audio": "001_002_001.mp3",
+            "transliteration": "alhamdu"
+          },
+          {
+            "word": "لِلَّهِ",
+            "audio": "001_002_002.mp3",
+            "transliteration": "lillahi"
+          },
+          {
+            "word": "رَبِّ",
+            "audio": "001_002_003.mp3",
+            "transliteration": "rabbi"
+          },
+          {
+            "word": "الْعَالَمِينَ",
+            "audio": "001_002_004.mp3",
+            "transliteration": "al-alameen"
+          }
+        ]
+      },
+      {
+        "verse_number": 3,
+        "arabic": "الرَّحْمَنِ الرَّحِيمِ",
+        "words": [
+          {
+            "word": "الرَّحْمَنِ",
+            "audio": "001_003_001.mp3",
+            "transliteration": "ar-rahmani"
+          },
+          {
+            "word": "الرَّحِيمِ",
+            "audio": "001_003_002.mp3",
+            "transliteration": "ar-raheem"
+          }
+        ]
+      },
+      {
+        "verse_number": 4,
+        "arabic": "مَالِكِ يَوْمِ الدِّينِ",
+        "words": [
+          {
+            "word": "مَالِكِ",
+            "audio": "001_004_001.mp3",
+            "transliteration": "maliki"
+          },
+          {
+            "word": "يَوْمِ",
+            "audio": "001_004_002.mp3",
+            "transliteration": "yawmi"
+          },
+          {
+            "word": "الدِّينِ",
+            "audio": "001_004_003.mp3",
+            "transliteration": "ad-deen"
+          }
+        ]
+      },
+      {
+        "verse_number": 5,
+        "arabic": "إِيَّاكَ نَعْبُدُ وَإِيَّاكَ نَسْتَعِينُ",
+        "words": [
+          {
+            "word": "إِيَّاكَ",
+            "audio": "001_005_001.mp3",
+            "transliteration": "iyyaka"
+          },
+          {
+            "word": "نَعْبُدُ",
+            "audio": "001_005_002.mp3",
+            "transliteration": "na'budu"
+          },
+          {
+            "word": "وَإِيَّاكَ",
+            "audio": "001_005_003.mp3",
+            "transliteration": "wa-iyyaka"
+          },
+          {
+            "word": "نَسْتَعِينُ",
+            "audio": "001_005_004.mp3",
+            "transliteration": "nasta'een"
+          }
+        ]
+      },
+      {
+        "verse_number": 6,
+        "arabic": "اهْدِنَا الصِّرَاطَ الْمُسْتَقِيمَ",
+        "words": [
+          {
+            "word": "اهْدِنَا",
+            "audio": "001_006_001.mp3",
+            "transliteration": "ihdina"
+          },
+          {
+            "word": "الصِّرَاطَ",
+            "audio": "001_006_002.mp3",
+            "transliteration": "as-sirata"
+          },
+          {
+            "word": "الْمُسْتَقِيمَ",
+            "audio": "001_006_003.mp3",
+            "transliteration": "al-mustaqeem"
+          }
+        ]
+      },
+      {
+        "verse_number": 7,
+        "arabic": "صِرَاطَ الَّذِينَ أَنْعَمْتَ عَلَيْهِمْ غَيْرِ الْمَغْضُوبِ عَلَيْهِمْ وَلَا الضَّالِّينَ",
+        "words": [
+          {
+            "word": "صِرَاطَ",
+            "audio": "001_007_001.mp3",
+            "transliteration": "sirata"
+          },
+          {
+            "word": "الَّذِينَ",
+            "audio": "001_007_002.mp3",
+            "transliteration": "allatheena"
+          },
+          {
+            "word": "أَنْعَمْتَ",
+            "audio": "001_007_003.mp3",
+            "transliteration": "an'amta"
+          },
+          {
+            "word": "عَلَيْهِمْ",
+            "audio": "001_007_004.mp3",
+            "transliteration": "alayhim"
+          },
+          {
+            "word": "غَيْرِ",
+            "audio": "001_007_005.mp3",
+            "transliteration": "ghayri"
+          },
+          {
+            "word": "الْمَغْضُوبِ",
+            "audio": "001_007_006.mp3",
+            "transliteration": "al-maghdoobi"
+          },
+          {
+            "word": "عَلَيْهِمْ",
+            "audio": "001_007_007.mp3",
+            "transliteration": "alayhim"
+          },
+          {
+            "word": "وَلَا",
+            "audio": "001_007_008.mp3",
+            "transliteration": "wala"
+          },
+          {
+            "word": "الضَّالِّينَ",
+            "audio": "001_007_009.mp3",
+            "transliteration": "ad-dalleen"
+          }
+        ]
+      }
+    ]
+  },
+  "qaris": {
+    "abdul_basit": {
+      "name": "Sheikh Abdul Basit Abdul Samad",
+      "style": "Mujawwad (Slow & Clear)",
+      "enabled": true
+    },
+    "mishary": {
+      "name": "Sheikh Mishary Rashid Alafasy",
+      "style": "Murattal (Moderate)",
+      "enabled": true
+    },
+    "sudais": {
+      "name": "Sheikh Abdul Rahman Al-Sudais",
+      "style": "Murattal (Clear)",
+      "enabled": true
+    }
+  }
+}
