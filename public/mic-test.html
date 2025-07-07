@@ -1,0 +1,126 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Microphone Test</title>
+    <style>
+        body { font-family: Arial, sans-serif; margin: 20px; }
+        .test-result { margin: 10px 0; padding: 10px; border-radius: 5px; }
+        .pass { background-color: #d4edda; color: #155724; }
+        .fail { background-color: #f8d7da; color: #721c24; }
+        button { padding: 10px 20px; margin: 5px; cursor: pointer; }
+    </style>
+</head>
+<body>
+    <h1>Microphone & Speech Recognition Test</h1>
+    
+    <div id="results"></div>
+    
+    <button onclick="testMicrophone()">Test Microphone</button>
+    <button onclick="testSpeechRecognition()">Test Speech Recognition</button>
+    <button onclick="runAllTests()">Run All Tests</button>
+    
+    <script>
+        const results = document.getElementById('results');
+        
+        function addResult(test, passed, message) {
+            const div = document.createElement('div');
+            div.className = `test-result ${passed ? 'pass' : 'fail'}`;
+            div.innerHTML = `<strong>${test}:</strong> ${passed ? '✅ PASS' : '❌ FAIL'} - ${message}`;
+            results.appendChild(div);
+        }
+        
+        function clearResults() {
+            results.innerHTML = '';
+        }
+        
+        async function testMicrophone() {
+            clearResults();
+            
+            // Test 1: Check if we're in secure context
+            const isSecure = window.isSecureContext || location.protocol === 'https:' || 
+                           location.hostname === 'localhost' || location.hostname === '127.0.0.1';
+            addResult('Secure Context', isSecure, 
+                     isSecure ? 'Running on secure context' : 'Not secure - needs HTTPS or localhost');
+            
+            // Test 2: Check MediaDevices API
+            const hasMediaDevices = !!navigator.mediaDevices?.getUserMedia;
+            addResult('MediaDevices API', hasMediaDevices,
+                     hasMediaDevices ? 'getUserMedia available' : 'getUserMedia not supported');
+            
+            if (!hasMediaDevices) return;
+            
+            // Test 3: Request microphone access
+            try {
+                const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+                addResult('Microphone Access', true, 'Successfully accessed microphone');
+                stream.getTracks().forEach(track => track.stop());
+            } catch (error) {
+                addResult('Microphone Access', false, `Error: ${error.name} - ${error.message}`);
+            }
+        }
+        
+        function testSpeechRecognition() {
+            clearResults();
+            
+            // Test Speech Recognition API
+            const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
+            const hasSpeechRec = !!SpeechRecognition;
+            addResult('Speech Recognition API', hasSpeechRec,
+                     hasSpeechRec ? 'Web Speech API available' : 'Web Speech API not supported');
+            
+            if (!hasSpeechRec) return;
+            
+            // Test creating recognition instance
+            try {
+                const recognition = new SpeechRecognition();
+                addResult('Create Recognition', true, 'Successfully created SpeechRecognition instance');
+                
+                recognition.lang = 'ar-SA';
+                recognition.continuous = true;
+                recognition.interimResults = true;
+                
+                recognition.onstart = () => {
+                    addResult('Recognition Start', true, 'Speech recognition started successfully');
+                    setTimeout(() => recognition.stop(), 2000);
+                };
+                
+                recognition.onerror = (event) => {
+                    addResult('Recognition Error', false, `Error: ${event.error}`);
+                };
+                
+                recognition.onend = () => {
+                    addResult('Recognition End', true, 'Speech recognition ended');
+                };
+                
+                recognition.start();
+            } catch (error) {
+                addResult('Create Recognition', false, `Error: ${error.message}`);
+            }
+        }
+        
+        async function runAllTests() {
+            clearResults();
+            
+            // Browser info
+            const div = document.createElement('div');
+            div.innerHTML = `
+                <h3>Browser Information:</h3>
+                <p><strong>User Agent:</strong> ${navigator.userAgent}</p>
+                <p><strong>Location:</strong> ${location.href}</p>
+                <p><strong>Protocol:</strong> ${location.protocol}</p>
+                <p><strong>Hostname:</strong> ${location.hostname}</p>
+                <p><strong>Secure Context:</strong> ${window.isSecureContext}</p>
+            `;
+            results.appendChild(div);
+            
+            await testMicrophone();
+            setTimeout(testSpeechRecognition, 1000);
+        }
+        
+        // Run tests automatically
+        runAllTests();
+    </script>
+</body>
+</html>

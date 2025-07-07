@@ -266,6 +266,16 @@ export interface AppStore {
   addToast: (toast: Omit<Toast, 'id'>) => void
   removeToast: (id: string) => void
   updatePreferences: (preferences: Partial<UserPreferences>) => void
+  setLoading: (isLoading: boolean) => void
+  setError: (error: string | null) => void
+  createSession: (verseId: string) => void
+  updateSession: (updates: Partial<RecitationSession>) => void
+  completeSession: () => void
+  updateAudioRecording: (updates: Partial<AudioRecordingState>) => void
+  resetAudioRecording: () => void
+  clearError: () => void
+  clearToasts: () => void
+  reset: () => void
 }
 
 export interface Toast {

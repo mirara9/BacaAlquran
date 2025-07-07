@@ -1,18 +1,20 @@
-import React, { useState, useCallback } from 'react'
+import { useState, useCallback } from 'react'
 import { motion } from 'framer-motion'
-import { ArrowLeft, Settings, BookOpen, Volume2 } from 'lucide-react'
+import { ArrowLeft, Settings, BookOpen } from 'lucide-react'
 import { useNavigate } from 'react-router-dom'
 import { Button } from '@/components/ui/Button'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/Card'
 import { Progress } from '@/components/ui/Progress'
-import { AudioRecorder } from '@/components/audio/AudioRecorder'
+import { RealtimeRecorder } from '@/components/audio/RealtimeRecorder'
+import { MicrophoneTest } from '@/components/debug/MicrophoneTest'
 import { QuranDisplay } from '@/components/quran/QuranDisplay'
-import { LoadingSpinner } from '@/components/ui/LoadingSpinner'
-import { useSpeechToText } from '@/hooks/useSpeechToText'
-import { useAppActions, useCurrentSession, useIsProcessing } from '@/stores/appStore'
-import { QuranVerse } from '@/types'
+import { useRealtimeSpeechRecognition } from '@/hooks/useRealtimeSpeechRecognition'
+import { useAudioPlayer, useTextToSpeech } from '@/hooks/useAudioPlayer'
+import { useAppActions, useCurrentSession } from '@/stores/appStore'
+import { QuranVerse, QuranWord } from '@/types'
+import { matchSpokenWords, matchRealTimeWords, generatePronunciationFeedback } from '@/lib/quran/wordMatching'
 
-// Mock data - in real app this would come from API
+// Mock data with word-level breakdown - in real app this would come from API
 const mockVerses: QuranVerse[] = [
   {
     id: 'fatiha-1',
@@ -43,24 +45,72 @@ const mockVerses: QuranVerse[] = [
   }
 ]
 
+// Create word-level data from verses
+const createWordsFromVerse = (verse: QuranVerse): QuranWord[] => {
+  const words = verse.arabicText.split(/\s+/)
+  const transliterationWords = verse.transliteration.split(/\s+/)
+  
+  return words.map((word, index) => ({
+    id: `${verse.id}-word-${index}`,
+    verseId: verse.id,
+    position: index,
+    arabicText: word,
+    transliteration: transliterationWords[index] || `word-${index}`,
+    translation: `word ${index + 1}`,
+    audioTimestamp: {
+      start: index * 0.8,
+      end: (index + 1) * 0.8
+    }
+  }))
+}
+
+// Removed - not needed
+
 export default function RecitationPage() {
   const navigate = useNavigate()
   const { addToast, setCurrentVerse, createSession, updateSession } = useAppActions()
   const currentSession = useCurrentSession()
-  const isProcessing = useIsProcessing()
+  // const isProcessing = useIsProcessing()
   
   const [currentVerseId, setCurrentVerseId] = useState<string>('fatiha-1')
   const [highlightedWords, setHighlightedWords] = useState<string[]>([])
   const [currentWordId, setCurrentWordId] = useState<string>()
   const [incorrectWords, setIncorrectWords] = useState<string[]>([])
   const [sessionProgress, setSessionProgress] = useState(0)
+  const [currentWordIndex, setCurrentWordIndex] = useState(0)
+  const [isListeningActive, setIsListeningActive] = useState(false)
 
-  const { processAudio, isProcessing: isSpeechProcessing, result: speechResult } = useSpeechToText({
-    provider: 'browser', // Use browser for demo, can switch to OpenAI/Google
+  // Audio player for reference pronunciation
+  const audioPlayer = useAudioPlayer({
+    onPlay: () => {
+      addToast({
+        type: 'info',
+        title: 'Playing Reference Audio',
+        description: 'Listen carefully to the correct pronunciation.'
+      })
+    },
+    onError: () => {
+      addToast({
+        type: 'error',
+        title: 'Audio Playback Failed',
+        description: 'Using text-to-speech as fallback.'
+      })
+    }
+  })
+
+  // Text-to-speech fallback
+  const { speak: speakText } = useTextToSpeech()
+
+  // Real-time speech recognition
+  const speechRecognition = useRealtimeSpeechRecognition({
     language: 'ar-SA',
+    continuous: true,
+    interimResults: true,
     onResult: (result) => {
-      console.log('Speech result:', result)
-      handleSpeechResult(result.transcript)
+      handleSpeechResult(result.transcript, false)
+    },
+    onInterimResult: (interimText) => {
+      handleRealtimeResult(interimText)
     },
     onError: (error) => {
       addToast({
@@ -68,94 +118,126 @@ export default function RecitationPage() {
         title: 'Speech Recognition Error',
         description: error
       })
+      setIsListeningActive(false)
+    },
+    onStart: () => {
+      addToast({
+        type: 'success',
+        title: 'Listening Started',
+        description: 'Start reciting the verse clearly.'
+      })
+      setIsListeningActive(true)
+    },
+    onEnd: () => {
+      setIsListeningActive(false)
     }
   })
 
-  const handleRecordingComplete = useCallback(async (audioBlob: Blob) => {
-    try {
-      addToast({
-        type: 'info',
-        title: 'Processing Recording',
-        description: 'Analyzing your recitation...'
-      })
+  // Handle real-time interim results for live word highlighting
+  const handleRealtimeResult = useCallback((interimText: string) => {
+    if (!interimText.trim()) return
 
-      // Process the audio with speech-to-text
-      await processAudio(audioBlob)
-      
-    } catch (error) {
-      console.error('Processing failed:', error)
-      addToast({
-        type: 'error',
-        title: 'Processing Failed',
-        description: 'Unable to process your recording. Please try again.'
-      })
-    }
-  }, [processAudio, addToast])
-
-  const handleSpeechResult = useCallback((transcript: string) => {
     const currentVerse = mockVerses.find(v => v.id === currentVerseId)
     if (!currentVerse) return
 
-    // Simple comparison - in real app this would be more sophisticated
-    const cleanTranscript = transcript.trim().toLowerCase()
-    const cleanExpected = currentVerse.arabicText.toLowerCase()
+    const currentWords = createWordsFromVerse(currentVerse)
+    const realtimeResult = matchRealTimeWords(
+      interimText, 
+      speechRecognition.transcript, 
+      currentWords, 
+      currentWordIndex
+    )
+
+    if (realtimeResult.currentWordId) {
+      setCurrentWordId(realtimeResult.currentWordId)
+    }
+  }, [currentVerseId, currentWordIndex, speechRecognition.transcript])
+
+  // Handle final speech recognition results
+  const handleSpeechResult = useCallback((transcript: string, isFinal: boolean = true) => {
+    if (!transcript.trim()) return
+
+    const currentVerse = mockVerses.find(v => v.id === currentVerseId)
+    if (!currentVerse) return
+
+    const currentWords = createWordsFromVerse(currentVerse)
+    const matchingResult = matchSpokenWords(transcript, currentWords, currentWordIndex, 70)
     
-    // Mock word highlighting logic
-    const words = currentVerse.arabicText.split(' ')
-    const transcriptWords = transcript.split(' ')
+    // Update highlighting
+    setHighlightedWords(matchingResult.highlightedWords)
+    setIncorrectWords(matchingResult.incorrectWords)
+    setCurrentWordIndex(matchingResult.currentWordIndex)
     
-    const correct: string[] = []
-    const incorrect: string[] = []
-    
-    words.forEach((word, index) => {
-      const wordId = `${currentVerseId}-word-${index}`
-      if (index < transcriptWords.length) {
-        // Very basic comparison - in real app would use sophisticated matching
-        if (transcriptWords[index]?.includes(word.substring(0, 2))) {
-          correct.push(wordId)
-        } else {
-          incorrect.push(wordId)
-        }
-      }
-    })
-    
-    setHighlightedWords(correct)
-    setIncorrectWords(incorrect)
-    
-    // Calculate accuracy
-    const accuracy = (correct.length / words.length) * 100
+    if (matchingResult.nextExpectedWord) {
+      setCurrentWordId(matchingResult.nextExpectedWord.id)
+    }
+
+    // Generate feedback
+    const feedback = generatePronunciationFeedback(matchingResult.matches)
     
     // Update session
-    if (currentSession) {
+    if (currentSession && isFinal) {
       updateSession({
         transcription: transcript,
-        accuracy: Math.round(accuracy),
-        status: 'completed'
+        accuracy: feedback.overallScore,
+        status: feedback.overallScore >= 70 ? 'completed' : 'processing'
       })
     }
     
-    // Show feedback
-    if (accuracy >= 80) {
-      addToast({
-        type: 'success',
-        title: 'Excellent Recitation!',
-        description: `${Math.round(accuracy)}% accuracy. Well done!`
-      })
-      
-      // Auto-advance to next verse after delay
-      setTimeout(() => {
-        handleNextVerse()
-      }, 2000)
+    // Show feedback for final results
+    if (isFinal) {
+      if (feedback.overallScore >= 90) {
+        addToast({
+          type: 'success',
+          title: 'Excellent Recitation!',
+          description: `${feedback.overallScore}% accuracy. ${feedback.feedback[0]}`
+        })
+        
+        // Auto-advance if verse is completed
+        if (matchingResult.currentWordIndex >= currentWords.length * 0.8) {
+          setTimeout(() => {
+            handleNextVerse()
+          }, 2000)
+        }
+      } else if (feedback.overallScore >= 70) {
+        addToast({
+          type: 'warning',
+          title: 'Good Effort!',
+          description: `${feedback.overallScore}% accuracy. ${feedback.feedback[0]}`
+        })
+      } else {
+        addToast({
+          type: 'error',
+          title: 'Keep Practicing!',
+          description: `${feedback.overallScore}% accuracy. ${feedback.suggestions[0]}`
+        })
+      }
+    }
+    
+    // Update progress
+    const verseProgress = (matchingResult.currentWordIndex / currentWords.length) * 100
+    const overallProgress = (mockVerses.findIndex(v => v.id === currentVerseId) * 100 + verseProgress) / mockVerses.length
+    setSessionProgress(Math.min(overallProgress, 100))
+  }, [currentVerseId, currentWordIndex, currentSession, updateSession, addToast])
+
+  // Start/stop recording with real-time recognition
+  const handleStartRecording = useCallback(() => {
+    if (speechRecognition.isSupported) {
+      speechRecognition.startListening()
     } else {
       addToast({
-        type: 'warning',
-        title: 'Good Effort!',
-        description: `${Math.round(accuracy)}% accuracy. Practice makes perfect!`
+        type: 'error',
+        title: 'Speech Recognition Not Supported',
+        description: 'Please use a compatible browser like Chrome or Edge.'
       })
     }
-    
-    setSessionProgress(prev => Math.min(prev + (100 / mockVerses.length), 100))
-  }, [currentVerseId, currentSession, updateSession, addToast])
+  }, [speechRecognition, addToast])
+
+  const handleStopRecording = useCallback(() => {
+    speechRecognition.stopListening()
+  }, [speechRecognition])
+
+  // Removed - not needed with real-time recognition
 
   const handleVerseSelect = (verseId: string) => {
     setCurrentVerseId(verseId)
@@ -182,14 +264,41 @@ export default function RecitationPage() {
     }
   }
 
-  const handlePlayAudio = (verseId: string) => {
-    // Mock audio playback
-    addToast({
-      type: 'info',
-      title: 'Playing Reference Audio',
-      description: 'Listen carefully to the correct pronunciation.'
-    })
-  }
+  const handlePlayAudio = useCallback(async (verseId: string) => {
+    const verse = mockVerses.find(v => v.id === verseId)
+    if (!verse) return
+
+    try {
+      // Try to play audio file first
+      if (verse.audioUrl) {
+        await audioPlayer.play(verse.audioUrl)
+      } else {
+        // Fallback to text-to-speech
+        await speakText(verse.arabicText, 'ar-SA')
+        addToast({
+          type: 'info',
+          title: 'Playing Text-to-Speech',
+          description: 'Audio file not available, using text-to-speech.'
+        })
+      }
+    } catch (error) {
+      // If audio fails, use text-to-speech as fallback
+      try {
+        await speakText(verse.arabicText, 'ar-SA')
+        addToast({
+          type: 'warning',
+          title: 'Using Text-to-Speech',
+          description: 'Audio file not available, using browser speech synthesis.'
+        })
+      } catch (ttsError) {
+        addToast({
+          type: 'error',
+          title: 'Audio Playback Failed',
+          description: 'Unable to play reference audio. Please check your browser settings.'
+        })
+      }
+    }
+  }, [audioPlayer, speakText, addToast])
 
   const currentVerse = mockVerses.find(v => v.id === currentVerseId)
   const currentIndex = mockVerses.findIndex(v => v.id === currentVerseId)
@@ -276,29 +385,24 @@ export default function RecitationPage() {
 
           {/* Sidebar */}
           <div className="space-y-6">
-            {/* Recording Card */}
-            <AudioRecorder
-              onRecordingComplete={handleRecordingComplete}
-              maxDuration={120} // 2 minutes
+            {/* Microphone Diagnostics - Temporary for debugging */}
+            <MicrophoneTest />
+            
+            {/* Real-time Recognition Card */}
+            <RealtimeRecorder
+              isListening={speechRecognition.isListening}
+              isSupported={speechRecognition.isSupported}
+              transcript={speechRecognition.transcript}
+              interimTranscript={speechRecognition.interimTranscript}
+              confidence={speechRecognition.confidence}
+              error={speechRecognition.error}
+              onStartListening={handleStartRecording}
+              onStopListening={handleStopRecording}
               disabled={!currentVerse}
             />
 
             {/* Feedback Card */}
-            {(isProcessing || isSpeechProcessing) && (
-              <Card>
-                <CardContent className="py-6">
-                  <div className="text-center">
-                    <LoadingSpinner size="lg" />
-                    <p className="mt-3 text-sm text-gray-600">
-                      {isSpeechProcessing ? 'Processing your recitation...' : 'Analyzing pronunciation...'}
-                    </p>
-                  </div>
-                </CardContent>
-              </Card>
-            )}
-
-            {/* Results Card */}
-            {speechResult && (
+            {isListeningActive && speechRecognition.transcript && (
               <motion.div
                 initial={{ opacity: 0, y: 20 }}
                 animate={{ opacity: 1, y: 0 }}
@@ -306,29 +410,36 @@ export default function RecitationPage() {
               >
                 <Card>
                   <CardHeader>
-                    <CardTitle className="text-lg">Analysis Results</CardTitle>
+                    <CardTitle className="text-lg">Real-time Analysis</CardTitle>
                   </CardHeader>
                   <CardContent className="space-y-4">
                     <div>
-                      <p className="text-sm font-medium text-gray-700 mb-2">What you said:</p>
-                      <p className="text-right rtl arabic-text bg-gray-50 p-3 rounded">
-                        {speechResult.transcript}
-                      </p>
+                      <p className="text-sm font-medium text-gray-700 mb-2">Recognition in progress:</p>
+                      <div className="bg-gray-50 p-3 rounded border">
+                        <p className="text-right rtl arabic-text text-lg leading-relaxed">
+                          {speechRecognition.transcript}
+                        </p>
+                        {speechRecognition.interimTranscript && (
+                          <p className="text-right rtl arabic-text text-lg leading-relaxed text-blue-600 italic mt-2">
+                            {speechRecognition.interimTranscript}
+                          </p>
+                        )}
+                      </div>
                     </div>
                     
                     <div>
-                      <p className="text-sm font-medium text-gray-700 mb-2">Confidence:</p>
+                      <p className="text-sm font-medium text-gray-700 mb-2">Recognition Confidence:</p>
                       <Progress 
-                        value={speechResult.confidence} 
+                        value={speechRecognition.confidence} 
                         max={100} 
-                        variant={speechResult.confidence >= 80 ? 'success' : 'warning'}
+                        variant={speechRecognition.confidence >= 80 ? 'success' : 'warning'}
                         showLabel 
                       />
                     </div>
 
                     {currentSession?.accuracy && (
                       <div>
-                        <p className="text-sm font-medium text-gray-700 mb-2">Accuracy:</p>
+                        <p className="text-sm font-medium text-gray-700 mb-2">Current Accuracy:</p>
                         <Progress 
                           value={currentSession.accuracy} 
                           max={100} 
@@ -369,19 +480,19 @@ export default function RecitationPage() {
               </CardHeader>
               <CardContent className="space-y-3 text-sm">
                 <div className="flex items-start space-x-3">
-                  <div className="w-6 h-6 bg-islamic-green text-white rounded-full flex items-center justify-center text-xs font-bold">1</div>
+                  <div className="w-6 h-6 bg-green-700 text-white rounded-full flex items-center justify-center text-xs font-bold">1</div>
                   <p>Select a verse from the Quran display</p>
                 </div>
                 <div className="flex items-start space-x-3">
-                  <div className="w-6 h-6 bg-islamic-green text-white rounded-full flex items-center justify-center text-xs font-bold">2</div>
+                  <div className="w-6 h-6 bg-green-700 text-white rounded-full flex items-center justify-center text-xs font-bold">2</div>
                   <p>Listen to the reference audio if available</p>
                 </div>
                 <div className="flex items-start space-x-3">
-                  <div className="w-6 h-6 bg-islamic-green text-white rounded-full flex items-center justify-center text-xs font-bold">3</div>
+                  <div className="w-6 h-6 bg-green-700 text-white rounded-full flex items-center justify-center text-xs font-bold">3</div>
                   <p>Click "Start Recording" and recite clearly</p>
                 </div>
                 <div className="flex items-start space-x-3">
-                  <div className="w-6 h-6 bg-islamic-green text-white rounded-full flex items-center justify-center text-xs font-bold">4</div>
+                  <div className="w-6 h-6 bg-green-700 text-white rounded-full flex items-center justify-center text-xs font-bold">4</div>
                   <p>Review feedback and practice again if needed</p>
                 </div>
               </CardContent>

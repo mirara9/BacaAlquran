@@ -24,7 +24,7 @@ export function useSpeechToText(options: UseSpeechToTextOptions = {}): UseSpeech
   const [result, setResult] = useState<SpeechToTextResult | null>(null)
   const [error, setError] = useState<string | null>(null)
 
-  // Browser Web Speech API implementation
+  // Browser Web Speech API implementation with real-time support
   const processBrowserSpeech = useCallback(async (audioBlob: Blob): Promise<SpeechToTextResult> => {
     return new Promise((resolve, reject) => {
       if (!('webkitSpeechRecognition' in window) && !('SpeechRecognition' in window)) {
@@ -35,25 +35,66 @@ export function useSpeechToText(options: UseSpeechToTextOptions = {}): UseSpeech
       const SpeechRecognition = window.SpeechRecognition || (window as any).webkitSpeechRecognition
       const recognition = new SpeechRecognition()
 
-      recognition.continuous = false
-      recognition.interimResults = false
+      recognition.continuous = true
+      recognition.interimResults = true
       recognition.lang = language
       recognition.maxAlternatives = 3
 
-      let transcripts: string[] = []
+      let finalTranscript = ''
       let confidence = 0
 
       recognition.onresult = (event) => {
-        const results = Array.from(event.results)
-        transcripts = results.map(result => result[0].transcript)
-        confidence = results[0]?.[0]?.confidence || 0.5
+        let interimTranscript = ''
+        
+        for (let i = event.resultIndex; i < event.results.length; i++) {
+          const transcript = event.results[i][0].transcript
+          confidence = event.results[i][0].confidence || 0.8
+          
+          if (event.results[i].isFinal) {
+            finalTranscript += transcript
+          } else {
+            interimTranscript += transcript
+          }
+        }
+
+        // For real-time feedback, we'll use interim results too
+        const currentTranscript = finalTranscript + interimTranscript
+        
+        if (currentTranscript.trim()) {
+          const words = currentTranscript.trim().split(' ').map((word, index) => ({
+            word: word.trim(),
+            confidence: Math.round(confidence * 100),
+            startTime: index * 0.5,
+            endTime: (index + 1) * 0.5
+          }))
+
+          const result: SpeechToTextResult = {
+            transcript: currentTranscript.trim(),
+            confidence: Math.round(confidence * 100),
+            words: words,
+            language: language,
+            alternativeTranscripts: []
+          }
+
+          // Call onResult for real-time updates if available
+          onResult?.(result)
+        }
+      }
+
+      recognition.onend = () => {
+        const words = finalTranscript.trim().split(' ').map((word, index) => ({
+          word: word.trim(),
+          confidence: Math.round(confidence * 100),
+          startTime: index * 0.5,
+          endTime: (index + 1) * 0.5
+        }))
 
         const result: SpeechToTextResult = {
-          transcript: transcripts[0] || '',
+          transcript: finalTranscript.trim(),
           confidence: Math.round(confidence * 100),
-          words: [], // Browser API doesn't provide word-level timing
+          words: words,
           language: language,
-          alternativeTranscripts: transcripts.slice(1)
+          alternativeTranscripts: []
         }
 
         resolve(result)
@@ -63,26 +104,15 @@ export function useSpeechToText(options: UseSpeechToTextOptions = {}): UseSpeech
         reject(new Error(`Speech recognition error: ${event.error}`))
       }
 
-      // Convert blob to audio element and play for recognition
-      const audioURL = URL.createObjectURL(audioBlob)
-      const audio = new Audio(audioURL)
+      // Start recognition directly for live audio
+      recognition.start()
       
-      audio.onloadeddata = () => {
-        recognition.start()
-        audio.play()
-      }
-
-      audio.onended = () => {
-        URL.revokeObjectURL(audioURL)
+      // Auto-stop after 10 seconds for this demo
+      setTimeout(() => {
         recognition.stop()
-      }
-
-      audio.onerror = () => {
-        URL.revokeObjectURL(audioURL)
-        reject(new Error('Failed to process audio file'))
-      }
+      }, 10000)
     })
-  }, [language])
+  }, [language, onResult])
 
   // OpenAI Whisper API implementation
   const processOpenAISpeech = useCallback(async (audioBlob: Blob): Promise<SpeechToTextResult> => {
