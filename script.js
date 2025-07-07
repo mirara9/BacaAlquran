@@ -21,29 +21,62 @@ class QuranReader {
         this.audioInitialized = false;
         this.initializeAudioSystem();
         
+        console.log('🔧 Starting QuranReader initialization...');
+        
         this.initializeElements();
+        console.log('✓ Elements initialized');
+        
         this.initializeSpeechRecognition();
+        console.log('✓ Speech recognition initialized');
+        
         this.loadCurrentPage();
+        console.log('✓ Page loaded');
+        
         this.bindEvents();
+        console.log('✓ Events bound');
+        
+        console.log('🎉 QuranReader initialization complete');
     }
     
     initializeElements() {
-        this.startBtn = document.getElementById('startBtn');
-        this.stopBtn = document.getElementById('stopBtn');
-        this.nextPageBtn = document.getElementById('nextPageBtn');
-        this.prevPageBtn = document.getElementById('prevPageBtn');
-        this.quranText = document.getElementById('quranText');
-        this.listeningStatus = document.getElementById('listeningStatus');
-        this.progressFill = document.getElementById('progressFill');
-        this.currentPageSpan = document.getElementById('currentPage');
-        this.totalPagesSpan = document.getElementById('totalPages');
-        this.tajweedToggle = document.getElementById('tajweedToggle');
-        this.tajweedFeedback = document.getElementById('tajweedFeedback');
-        this.tajweedContent = document.getElementById('tajweedContent');
-        this.qariSelector = document.getElementById('qariSelector');
-        this.audioStatus = document.getElementById('audioStatus');
-        this.audioStatusIcon = document.getElementById('audioStatusIcon');
-        this.audioStatusText = document.getElementById('audioStatusText');
+        const elements = {
+            startBtn: 'startBtn',
+            stopBtn: 'stopBtn',
+            nextPageBtn: 'nextPageBtn',
+            prevPageBtn: 'prevPageBtn',
+            quranText: 'quranText',
+            listeningStatus: 'listeningStatus',
+            progressFill: 'progressFill',
+            currentPageSpan: 'currentPage',
+            totalPagesSpan: 'totalPages',
+            tajweedToggle: 'tajweedToggle',
+            tajweedFeedback: 'tajweedFeedback',
+            tajweedContent: 'tajweedContent',
+            qariSelector: 'qariSelector',
+            audioStatus: 'audioStatus',
+            audioStatusIcon: 'audioStatusIcon',
+            audioStatusText: 'audioStatusText'
+        };
+        
+        let missingElements = [];
+        
+        for (const [property, elementId] of Object.entries(elements)) {
+            const element = document.getElementById(elementId);
+            if (element) {
+                this[property] = element;
+                console.log(`✓ Found ${property}: ${elementId}`);
+            } else {
+                missingElements.push(elementId);
+                console.error(`✗ Missing element: ${elementId}`);
+            }
+        }
+        
+        if (missingElements.length > 0) {
+            console.error(`❌ Missing ${missingElements.length} required elements:`, missingElements);
+            throw new Error(`Missing required DOM elements: ${missingElements.join(', ')}`);
+        }
+        
+        console.log('✅ All DOM elements found successfully');
     }
     
     initializeSpeechRecognition() {
@@ -319,16 +352,19 @@ class QuranReader {
     
     updateCurrentPosition(matchedWord) {
         // Update tracking based on the matched word
-        this.currentVerseIndex = matchedWord.verseIndex;
+        const previousVerseIndex = this.currentVerseIndex;
         
         // If we're in the same verse, advance expected word index
-        if (matchedWord.verseIndex === this.currentVerseIndex) {
+        if (matchedWord.verseIndex === previousVerseIndex) {
             this.expectedWordIndex = Math.max(this.expectedWordIndex, matchedWord.wordIndex + 1);
         } else {
             // Moved to new verse
             this.currentVerseIndex = matchedWord.verseIndex;
             this.expectedWordIndex = matchedWord.wordIndex + 1;
         }
+        
+        // Always update current verse index
+        this.currentVerseIndex = matchedWord.verseIndex;
         
         console.log('Updated position - Verse:', this.currentVerseIndex, 'Expected word:', this.expectedWordIndex);
     }
