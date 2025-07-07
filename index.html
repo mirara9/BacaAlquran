@@ -1,0 +1,41 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Quran Reader - Speech Recognition</title>
+    <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+    <div class="container">
+        <header>
+            <h1>القرآن الكريم - Quran Reader</h1>
+            <div class="controls">
+                <button id="startBtn">Start Reading</button>
+                <button id="stopBtn" disabled>Stop Reading</button>
+                <button id="nextPageBtn">Next Page</button>
+                <button id="prevPageBtn">Previous Page</button>
+            </div>
+        </header>
+        
+        <main>
+            <div class="page-indicator">
+                <span id="currentPage">1</span> / <span id="totalPages">2</span>
+            </div>
+            
+            <div class="quran-text" id="quranText">
+                <!-- Quran text will be dynamically loaded here -->
+            </div>
+            
+            <div class="status-bar">
+                <div id="listeningStatus">Ready to listen...</div>
+                <div id="progressBar">
+                    <div id="progressFill"></div>
+                </div>
+            </div>
+        </main>
+    </div>
+    
+    <script src="script.js"></script>
+</body>
+</html>
