@@ -12,6 +12,10 @@ class QuranReader {
         this.audioContext = null;
         this.currentAudio = null;
         this.qariDatabase = this.initializeQariDatabase();
+        this.audioManifest = null;
+        this.selectedQari = 'abdul_basit';
+        this.audioCache = new Map();
+        this.loadAudioManifest();
         
         this.initializeElements();
         this.initializeSpeechRecognition();
@@ -32,6 +36,7 @@ class QuranReader {
         this.tajweedToggle = document.getElementById('tajweedToggle');
         this.tajweedFeedback = document.getElementById('tajweedFeedback');
         this.tajweedContent = document.getElementById('tajweedContent');
+        this.qariSelector = document.getElementById('qariSelector');
     }
     
     initializeSpeechRecognition() {
@@ -97,6 +102,7 @@ class QuranReader {
         this.nextPageBtn.addEventListener('click', () => this.nextPage());
         this.prevPageBtn.addEventListener('click', () => this.prevPage());
         this.tajweedToggle.addEventListener('click', () => this.toggleTajweed());
+        this.qariSelector.addEventListener('change', (e) => this.changeQari(e.target.value));
     }
     
     startListening() {
@@ -651,30 +657,97 @@ class QuranReader {
     }
     
     initializeQariDatabase() {
-        // Database of famous Qaris with their recitation URLs
-        // In a real implementation, these would be actual audio file URLs
+        // Local Qari database pointing to local audio files
         return {
             'abdul_basit': {
                 name: 'Sheikh Abdul Basit Abdul Samad',
                 style: 'Mujawwad (Slow & Clear)',
-                baseUrl: 'https://server8.mp3quran.net/basit_mojawwad/'
+                directory: 'audio/qaris/abdul_basit/',
+                enabled: true
             },
             'mishary': {
                 name: 'Sheikh Mishary Rashid Alafasy', 
                 style: 'Murattal (Moderate)',
-                baseUrl: 'https://server8.mp3quran.net/afs/'
+                directory: 'audio/qaris/mishary/',
+                enabled: true
             },
             'sudais': {
                 name: 'Sheikh Abdul Rahman Al-Sudais',
                 style: 'Murattal (Clear)',
-                baseUrl: 'https://server11.mp3quran.net/sudais/'
-            },
-            'husary': {
-                name: 'Sheikh Mahmoud Khalil Al-Husary',
-                style: 'Educational (Very Clear)',
-                baseUrl: 'https://server8.mp3quran.net/husary/'
+                directory: 'audio/qaris/sudais/',
+                enabled: true
             }
         };
+    }
+    
+    async loadAudioManifest() {
+        try {
+            const response = await fetch('audio/audio_manifest.json');
+            this.audioManifest = await response.json();
+            console.log('Audio manifest loaded successfully');
+            this.preloadCommonAudio();
+        } catch (error) {
+            console.error('Error loading audio manifest:', error);
+            this.audioManifest = this.createFallbackManifest();
+        }
+    }
+    
+    createFallbackManifest() {
+        // Fallback manifest if file is not found
+        return {
+            surah_1: {
+                verses: [
+                    {
+                        verse_number: 1,
+                        words: [
+                            {word: "بِسْمِ", audio: "001_001_001.mp3", transliteration: "bismi"},
+                            {word: "اللَّهِ", audio: "001_001_002.mp3", transliteration: "allahi"},
+                            {word: "الرَّحْمَنِ", audio: "001_001_003.mp3", transliteration: "ar-rahmani"},
+                            {word: "الرَّحِيمِ", audio: "001_001_004.mp3", transliteration: "ar-raheem"}
+                        ]
+                    },
+                    {
+                        verse_number: 2,
+                        words: [
+                            {word: "الْحَمْدُ", audio: "001_002_001.mp3", transliteration: "alhamdu"},
+                            {word: "لِلَّهِ", audio: "001_002_002.mp3", transliteration: "lillahi"},
+                            {word: "رَبِّ", audio: "001_002_003.mp3", transliteration: "rabbi"},
+                            {word: "الْعَالَمِينَ", audio: "001_002_004.mp3", transliteration: "al-alameen"}
+                        ]
+                    }
+                ]
+            }
+        };
+    }
+    
+    async preloadCommonAudio() {
+        // Preload audio for the first few words to improve performance
+        if (!this.audioManifest || !this.audioManifest.surah_1) return;
+        
+        const firstVerse = this.audioManifest.surah_1.verses[0];
+        if (firstVerse && firstVerse.words) {
+            for (const wordData of firstVerse.words.slice(0, 4)) { // Preload first 4 words
+                await this.preloadAudio(wordData.word, wordData.audio);
+            }
+        }
+    }
+    
+    async preloadAudio(word, audioFilename) {
+        try {
+            const audioPath = `${this.qariDatabase[this.selectedQari].directory}${audioFilename}`;
+            const audio = new Audio(audioPath);
+            
+            // Preload the audio
+            audio.preload = 'auto';
+            audio.load();
+            
+            // Cache it
+            this.audioCache.set(word, audio);
+            
+            console.log(`Preloaded: ${word}`);
+        } catch (error) {
+            console.log(`Could not preload ${word}:`, error);
+        }
     }
     
     async playWordAudio(word, verseIndex, wordIndex) {
@@ -682,20 +755,102 @@ class QuranReader {
             // Stop any currently playing audio
             if (this.currentAudio) {
                 this.currentAudio.pause();
+                this.currentAudio.currentTime = 0;
                 this.currentAudio = null;
             }
             
-            // For demo purposes, we'll use text-to-speech for now
-            // In a real implementation, you would load actual Qari recordings
-            await this.playDemoAudio(word);
+            // Find the audio file for this word
+            const audioFilename = this.findAudioForWord(word, verseIndex, wordIndex);
             
-            // Show audio feedback
-            this.listeningStatus.textContent = `Playing pronunciation of "${word}" by Sheikh Abdul Basit`;
+            if (audioFilename) {
+                await this.playLocalAudio(word, audioFilename);
+            } else {
+                // Fallback to TTS
+                await this.playDemoAudio(word);
+                this.listeningStatus.textContent = `Playing TTS pronunciation of "${word}" (no local audio found)`;
+            }
             
         } catch (error) {
             console.error('Error playing audio:', error);
-            this.listeningStatus.textContent = 'Audio not available for this word';
+            // Fallback to TTS on error
+            await this.playDemoAudio(word);
+            this.listeningStatus.textContent = `Playing fallback pronunciation of "${word}"`;
         }
+    }
+    
+    findAudioForWord(word, verseIndex, wordIndex) {
+        if (!this.audioManifest || !this.audioManifest.surah_1) return null;
+        
+        const verses = this.audioManifest.surah_1.verses;
+        if (verseIndex < verses.length) {
+            const verse = verses[verseIndex];
+            if (verse.words && wordIndex < verse.words.length) {
+                const wordData = verse.words[wordIndex];
+                if (wordData.word === word || this.normalizeArabicText(wordData.word) === this.normalizeArabicText(word)) {
+                    return wordData.audio;
+                }
+            }
+        }
+        
+        // If not found by position, search by word text
+        for (const verse of verses) {
+            if (verse.words) {
+                for (const wordData of verse.words) {
+                    if (wordData.word === word || this.normalizeArabicText(wordData.word) === this.normalizeArabicText(word)) {
+                        return wordData.audio;
+                    }
+                }
+            }
+        }
+        
+        return null;
+    }
+    
+    async playLocalAudio(word, audioFilename) {
+        return new Promise((resolve, reject) => {
+            try {
+                // Check if audio is already cached
+                let audio = this.audioCache.get(word);
+                
+                if (!audio) {
+                    // Create new audio element
+                    const audioPath = `${this.qariDatabase[this.selectedQari].directory}${audioFilename}`;
+                    audio = new Audio(audioPath);
+                    
+                    // Cache it for next time
+                    this.audioCache.set(word, audio);
+                }
+                
+                // Reset audio to beginning
+                audio.currentTime = 0;
+                
+                // Set up event listeners
+                audio.onended = () => {
+                    this.currentAudio = null;
+                    resolve();
+                };
+                
+                audio.onerror = (error) => {
+                    console.error(`Error playing ${audioFilename}:`, error);
+                    reject(error);
+                };
+                
+                audio.onloadstart = () => {
+                    this.listeningStatus.textContent = `Loading "${word}" by ${this.qariDatabase[this.selectedQari].name}...`;
+                };
+                
+                audio.oncanplaythrough = () => {
+                    this.listeningStatus.textContent = `Playing "${word}" by ${this.qariDatabase[this.selectedQari].name}`;
+                };
+                
+                // Store reference and play
+                this.currentAudio = audio;
+                audio.play().catch(reject);
+                
+            } catch (error) {
+                reject(error);
+            }
+        });
     }
     
     async playDemoAudio(word) {
@@ -815,7 +970,12 @@ class QuranReader {
                     <button class="play-audio-btn" onclick="quranReader.playCorrectPronunciation('${mistake.word}')">
                         🔊 Play Correct Pronunciation
                     </button>
-                    <span class="qari-name">Sheikh Abdul Basit (Mujawwad)</span>
+                    <span class="qari-name">${this.qariDatabase[this.selectedQari].name} (${this.qariDatabase[this.selectedQari].style})</span>
+                    <select onchange="quranReader.changeQari(this.value)" style="margin-left: 10px; padding: 4px;">
+                        ${Object.entries(this.qariDatabase).map(([id, qari]) => 
+                            `<option value="${id}" ${id === this.selectedQari ? 'selected' : ''}>${qari.name}</option>`
+                        ).join('')}
+                    </select>
                 </div>
                 
                 <hr style="margin: 15px 0; border: 1px solid #ddd;">
@@ -856,13 +1016,44 @@ class QuranReader {
         playBtn.innerHTML = '🔊 Playing...';
         
         try {
-            await this.playDemoAudio(word);
+            // Find the word in current page and play its audio
+            const wordData = this.wordsOnCurrentPage.find(w => 
+                w.text === word || this.normalizeArabicText(w.text) === this.normalizeArabicText(word)
+            );
+            
+            if (wordData) {
+                const globalIndex = parseInt(wordData.element.dataset.globalIndex);
+                const verseIndex = parseInt(wordData.element.dataset.verseIndex);
+                const wordIndex = parseInt(wordData.element.dataset.wordIndex);
+                
+                await this.playWordAudio(word, verseIndex, wordIndex);
+            } else {
+                // Fallback to TTS
+                await this.playDemoAudio(word);
+            }
         } catch (error) {
             console.error('Error playing pronunciation:', error);
+            // Fallback to TTS
+            await this.playDemoAudio(word);
         } finally {
             playBtn.classList.remove('playing');
             playBtn.disabled = false;
             playBtn.innerHTML = '🔊 Play Correct Pronunciation';
+        }
+    }
+    
+    changeQari(qariId) {
+        if (this.qariDatabase[qariId]) {
+            this.selectedQari = qariId;
+            
+            // Clear audio cache to reload with new qari
+            this.audioCache.clear();
+            
+            // Preload some audio with new qari
+            this.preloadCommonAudio();
+            
+            this.listeningStatus.textContent = `Switched to ${this.qariDatabase[qariId].name}`;
+            console.log(`Switched to Qari: ${this.qariDatabase[qariId].name}`);
         }
     }
     
