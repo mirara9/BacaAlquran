@@ -195,28 +195,34 @@ export function isArabicText(text: string): boolean {
 export function cleanArabicText(text: string): string {
   let cleaned = text
   
-  // Remove all diacritics (harakat) - comprehensive range
-  cleaned = cleaned.replace(/[\u064B-\u065F\u0670\u06D6-\u06ED\u08D4-\u08E1\u08E3-\u08FF\uFE70-\uFE7F]/g, '')
+  // Remove all diacritics (harakat) - comprehensive range for Uthmani script
+  cleaned = cleaned.replace(/[\u064B-\u065F\u0670\u06D6-\u06ED\u08D4-\u08E1\u08E3-\u08FF\uFE70-\uFE7F\u0610-\u061A\u06DF\u06E0-\u06E4\u06EA-\u06ED]/g, '')
   
-  // Normalize common Arabic character variations
+  // Normalize common Arabic character variations (especially important for Uthmani vs modern)
   cleaned = cleaned
-    // Normalize Alef variations
-    .replace(/[أإآا]/g, 'ا')
-    // Normalize Heh variations  
-    .replace(/[هة]/g, 'ه')
+    // Normalize all Alef variations to basic Alef
+    .replace(/[أإآٱا]/g, 'ا')
+    // Normalize Heh variations (including Teh Marbuta)
+    .replace(/[هةۃۀ]/g, 'ه')
     // Normalize Yeh variations
-    .replace(/[يىئ]/g, 'ي')
+    .replace(/[يىئۍ]/g, 'ي')
     // Normalize Waw variations
-    .replace(/[ؤو]/g, 'و')
-    // Normalize Teh Marbuta
-    .replace(/ة/g, 'ه')
+    .replace(/[ؤوۇۉۋ]/g, 'و')
+    // Normalize Teh variations
+    .replace(/[تٹ]/g, 'ت')
+    // Normalize Lam-Alef ligatures
+    .replace(/[لا]/g, 'لا')
     // Remove Kashida (Arabic tatweel)
     .replace(/ـ/g, '')
-    // Remove extra whitespace and normalize
-    .replace(/\s+/g, ' ')
+    // Remove Zero Width Non-Joiner (ZWNJ) and Zero Width Joiner (ZWJ)
+    .replace(/[\u200C\u200D]/g, '')
+    // Remove any remaining invisible characters
+    .replace(/[\u00AD\u2060\u180E]/g, '')
+    // Normalize whitespace
+    .replace(/[\s\u00A0\u1680\u2000-\u200A\u2028\u2029\u202F\u205F\u3000]+/g, ' ')
     .trim()
-    .toLowerCase()
   
+  // Don't convert to lowercase for Arabic as it can cause issues
   return cleaned
 }
 

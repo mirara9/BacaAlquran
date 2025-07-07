@@ -405,10 +405,19 @@ export function SimpleQuranReciter() {
     console.log(`   Spoken: "${normalizedSpoken}"`)
     console.log(`   Expected: "${normalizedExpected}"`)
     
+    // Debug: Character-by-character comparison
+    console.log(`🔍 Character comparison:`)
+    const spokenChars = normalizedSpoken.split('')
+    const expectedChars = normalizedExpected.split('')
+    console.log(`   Spoken chars: [${spokenChars.map(c => c + '(' + c.charCodeAt(0) + ')').join(', ')}]`)
+    console.log(`   Expected chars: [${expectedChars.map(c => c + '(' + c.charCodeAt(0) + ')').join(', ')}]`)
+    
     // Quick check: if they're exactly the same after normalization, it's 100%
     if (normalizedSpoken === normalizedExpected) {
       console.log(`✅ EXACT MATCH after normalization - 100%`)
       return 100
+    } else {
+      console.log(`❌ NOT exact match - lengths: spoken=${normalizedSpoken.length}, expected=${normalizedExpected.length}`)
     }
     
     // Strict validation: Check if the spoken text contains the complete expected verse
