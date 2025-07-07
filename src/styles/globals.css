@@ -11,12 +11,29 @@
     @apply bg-gray-50 text-gray-900;
   }
 
+  /* Import Uthmani Quran fonts */
+  @import url('https://fonts.googleapis.com/css2?family=Amiri+Quran&display=swap');
+
   /* Arabic text optimization */
   .arabic-text {
     font-feature-settings: 'liga' on, 'calt' on, 'kern' on;
     text-rendering: optimizeLegibility;
     font-kerning: auto;
     font-variant-ligatures: common-ligatures;
+  }
+
+  /* Uthmani script styling */
+  .uthmani-font {
+    font-family: 'Amiri Quran', 'KFGQPC Uthman Taha Naskh', 'Traditional Arabic', serif;
+    font-feature-settings: 'liga' on, 'calt' on, 'kern' on, 'mark' on, 'mkmk' on;
+    text-rendering: optimizeLegibility;
+    font-kerning: auto;
+    font-variant-ligatures: common-ligatures;
+    letter-spacing: 0.02em;
+  }
+
+  .font-arabic {
+    font-family: 'Amiri Quran', 'Traditional Arabic', 'Arabic Typesetting', serif;
   }
 
   /* RTL support */

@@ -7,7 +7,7 @@ import { LoadingSpinner } from '@/components/ui/LoadingSpinner'
 
 // Lazy load pages for better performance
 const HomePage = React.lazy(() => import('@/pages/HomePage'))
-const RecitationPage = React.lazy(() => import('@/pages/RecitationPage'))
+const RecitationPage = React.lazy(() => import('@/pages/NewRecitationPage'))
 const DashboardPage = React.lazy(() => import('@/pages/DashboardPage'))
 const SettingsPage = React.lazy(() => import('@/pages/SettingsPage'))
 const DiagnosticsPage = React.lazy(() => import('@/pages/DiagnosticsPage'))
