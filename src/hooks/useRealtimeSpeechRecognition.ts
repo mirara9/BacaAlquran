@@ -21,6 +21,7 @@ interface UseRealtimeSpeechRecognitionReturn {
   error: string | null
   startListening: () => void
   stopListening: () => void
+  clearTranscript: () => void
 }
 
 export function useRealtimeSpeechRecognition(
@@ -45,6 +46,7 @@ export function useRealtimeSpeechRecognition(
   const [error, setError] = useState<string | null>(null)
 
   const recognitionRef = useRef<any | null>(null)
+  const finalTranscriptRef = useRef('')
 
   // Check browser support and microphone permissions on mount
   useEffect(() => {
@@ -126,7 +128,7 @@ export function useRealtimeSpeechRecognition(
     recognition.lang = language
     recognition.maxAlternatives = 3
 
-    let finalTranscript = ''
+    // Use ref so it persists across re-renders but can be reset
 
     recognition.onstart = () => {
       console.log('Speech recognition started')
@@ -144,12 +146,13 @@ export function useRealtimeSpeechRecognition(
         const confidenceScore = result[0].confidence || 0.8
 
         if (result.isFinal) {
-          finalTranscript += transcriptText + ' '
-          setTranscript(finalTranscript.trim())
+          finalTranscriptRef.current += transcriptText + ' '
+          const currentTranscript = finalTranscriptRef.current.trim()
+          setTranscript(currentTranscript)
           setConfidence(Math.round(confidenceScore * 100))
           
           // Create structured result for final transcript
-          const words = finalTranscript.trim().split(' ').map((word, index) => ({
+          const words = currentTranscript.split(' ').map((word, index) => ({
             word: word.trim(),
             confidence: Math.round(confidenceScore * 100),
             startTime: index * 0.5,
@@ -157,7 +160,7 @@ export function useRealtimeSpeechRecognition(
           }))
 
           const speechResult: SpeechToTextResult = {
-            transcript: finalTranscript.trim(),
+            transcript: currentTranscript,
             confidence: Math.round(confidenceScore * 100),
             words: words,
             language: language,
@@ -207,6 +210,13 @@ export function useRealtimeSpeechRecognition(
     setIsListening(false)
   }, [])
 
+  const clearTranscript = useCallback(() => {
+    finalTranscriptRef.current = ''
+    setTranscript('')
+    setInterimTranscript('')
+    console.log('🧹 Speech recognition transcript cleared')
+  }, [])
+
   // Cleanup on unmount
   useEffect(() => {
     return () => {
@@ -224,6 +234,7 @@ export function useRealtimeSpeechRecognition(
     confidence,
     error,
     startListening,
-    stopListening
+    stopListening,
+    clearTranscript
   }
 }

@@ -70,15 +70,6 @@ export function SimpleQuranReciter() {
 
   const { speak } = useTextToSpeech()
 
-  // Clear transcript when advancing to new verse
-  const advanceToNextVerse = useCallback((nextVerseId: number) => {
-    console.log(`🔄 Advancing from verse ${currentVerse} to verse ${nextVerseId}`)
-    setCurrentVerse(nextVerseId)
-    setCurrentTranscript('') // Clear previous speech
-    setMatches([]) // Clear previous matches
-    console.log('🧹 Cleared transcript for new verse')
-  }, [currentVerse])
-
   // Speech recognition with chunked processing
   const speechRecognition = useRealtimeSpeechRecognition({
     language: 'ar-SA',
@@ -108,6 +99,16 @@ export function SimpleQuranReciter() {
       setIsListening(false)
     }
   })
+
+  // Clear transcript when advancing to new verse
+  const advanceToNextVerse = useCallback((nextVerseId: number) => {
+    console.log(`🔄 Advancing from verse ${currentVerse} to verse ${nextVerseId}`)
+    setCurrentVerse(nextVerseId)
+    setCurrentTranscript('') // Clear previous speech
+    setMatches([]) // Clear previous matches
+    speechRecognition.clearTranscript() // Clear speech recognition transcript
+    console.log('🧹 Cleared transcript for new verse')
+  }, [currentVerse, speechRecognition])
 
   // Process final speech recognition results
   const handleSpeechResult = useCallback((transcript: string) => {
@@ -336,6 +337,8 @@ export function SimpleQuranReciter() {
   }
 
   const handleStartListening = () => {
+    speechRecognition.clearTranscript() // Clear any accumulated transcript
+    setCurrentTranscript('') // Clear local transcript
     speechRecognition.startListening()
   }
 
@@ -437,7 +440,7 @@ export function SimpleQuranReciter() {
       </Card>
 
       {/* Live Recognition - Sticky Section */}
-      {(isListening || speechRecognition.transcript) && (
+      {(isListening || currentTranscript) && (
         <div className="sticky top-4 z-50 mb-6">
           <Card className="bg-blue-50 border-blue-200 shadow-lg">
             <CardHeader className="pb-3">
@@ -468,12 +471,12 @@ export function SimpleQuranReciter() {
                 </div>
 
                 {/* Live Recognition Text */}
-                {speechRecognition.transcript && (
+                {currentTranscript && (
                   <div className="bg-white rounded-lg p-3">
                     <p className="text-sm font-medium text-gray-700 mb-2">What you said:</p>
                     <div className="text-right mb-3" dir="rtl">
                       <p className="text-lg text-gray-900 uthmani-font">
-                        {speechRecognition.transcript}
+                        {currentTranscript}
                       </p>
                     </div>
                     
