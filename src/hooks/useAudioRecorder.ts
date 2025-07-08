@@ -111,7 +111,7 @@ export function useAudioRecorder(options: UseAudioRecorderOptions = {}): UseAudi
       // Setup RecordRTC
       recorderRef.current = new RecordRTC(stream, {
         type: 'audio',
-        mimeType: 'audio/webm;codecs=opus',
+        mimeType: 'audio/webm',
         recorderType: RecordRTC.StereoAudioRecorder,
         numberOfAudioChannels: 1,
         desiredSampRate: 16000,
