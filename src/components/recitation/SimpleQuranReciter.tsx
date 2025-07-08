@@ -155,9 +155,15 @@ export function SimpleQuranReciter() {
   const advanceToNextVerse = useCallback((nextVerseId: number) => {
     console.log(`🔄 Advancing from verse ${currentVerse} to verse ${nextVerseId}`)
     setCurrentVerse(nextVerseId)
-    clearTranscriptForNewAttempt() // Clear transcript for fresh start
-    console.log('🧹 Advanced to new verse (preserved highlights)')
-  }, [currentVerse, clearTranscriptForNewAttempt])
+    
+    // Force stop and restart speech recognition to ensure clean slate
+    speechRecognition.stopListening()
+    setTimeout(() => {
+      clearTranscriptForNewAttempt()
+      speechRecognition.startListening()
+      console.log('🧹 Advanced to new verse (preserved highlights)')
+    }, 100)
+  }, [currentVerse, clearTranscriptForNewAttempt, speechRecognition])
 
   // Process final speech recognition results
   const handleSpeechResult = useCallback((transcript: string) => {
