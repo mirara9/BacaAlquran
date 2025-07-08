@@ -211,6 +211,7 @@ export function SimpleQuranReciter() {
       if (nextVerseId <= AL_FATIHA_VERSES.length) {
         advanceToNextVerse(nextVerseId)
       }
+      // Skip fallback processing since we already found valid matches
     } else {
       // Fallback: try the segmentation approach for complex cases
       const verseSegments = extractVerseSegments(transcript)
