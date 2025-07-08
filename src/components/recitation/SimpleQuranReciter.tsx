@@ -98,10 +98,15 @@ export function SimpleQuranReciter() {
       
       handleSpeechResult(fullTranscript)
       
-      // Set a 1-second timeout to clear transcript after silence
+      // Set a 10-second timeout to clear transcript after silence
       const newTimeout = setTimeout(() => {
         clearTranscriptForNewAttempt()
-      }, 1000)
+        // Stop listening after 10 seconds of silence
+        if (speechRecognition.isListening) {
+          speechRecognition.stopListening()
+          console.log('⏰ Stopped listening after 10 seconds of silence')
+        }
+      }, 10000)
       setSilenceTimeout(newTimeout)
     },
     onInterimResult: (interimText) => {
@@ -165,10 +170,10 @@ export function SimpleQuranReciter() {
     setTimeout(() => {
       clearTranscriptForNewAttempt()
       console.log('🧹 Advanced to new verse (preserved highlights)')
-      // Restart speech recognition automatically
+      // Continue listening without interruption for continuous recitation
       setTimeout(() => {
         speechRecognition.startListening()
-        console.log('🎤 Speech recognition restarted for next verse')
+        console.log('🎤 Speech recognition continued for next verse')
       }, 200)
     }, 200)
   }, [currentVerse, clearTranscriptForNewAttempt, speechRecognition])
@@ -302,7 +307,16 @@ export function SimpleQuranReciter() {
     setIncorrectVerses(newIncorrect)
     setMatches(allMatches)
     
-  }, [currentVerse, highlightedVerses, incorrectVerses, matches, advanceToNextVerse])
+    // Check if entire surah is completed
+    if (newHighlighted.size === AL_FATIHA_VERSES.length) {
+      console.log('🎉 Entire Al-Fatiha completed! Auto-stopping speech recognition.')
+      setTimeout(() => {
+        speechRecognition.stopListening()
+        clearTranscriptForNewAttempt()
+      }, 2000) // Give 2 seconds to show completion
+    }
+    
+  }, [currentVerse, highlightedVerses, incorrectVerses, matches, advanceToNextVerse, speechRecognition, clearTranscriptForNewAttempt])
 
   // Extract individual verse segments from continuous speech
   const extractVerseSegments = (transcript: string): { text: string; startIndex: number }[] => {

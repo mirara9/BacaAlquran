@@ -183,11 +183,17 @@ export function useRealtimeSpeechRecognition(
     }
 
     recognition.onerror = (event: any) => {
-      console.error('Speech recognition error:', event.error)
-      const errorMsg = `Speech recognition error: ${event.error}`
-      setError(errorMsg)
-      onError?.(errorMsg)
-      setIsListening(false)
+      // Don't show "aborted" errors as they're expected during verse transitions
+      if (event.error !== 'aborted') {
+        console.error('Speech recognition error:', event.error)
+        const errorMsg = `Speech recognition error: ${event.error}`
+        setError(errorMsg)
+        onError?.(errorMsg)
+        setIsListening(false)
+      } else {
+        // Just log aborted errors for debugging
+        console.log('Speech recognition aborted (expected during transitions)')
+      }
     }
 
     recognition.onend = () => {
