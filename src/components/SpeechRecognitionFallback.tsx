@@ -18,6 +18,8 @@ export const SpeechRecognitionFallback: React.FC<SpeechRecognitionFallbackProps>
   const [isListening, setIsListening] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [isSupported, setIsSupported] = useState(true);
+  const [transcript, setTranscript] = useState('');
+  const [interimTranscript, setInterimTranscript] = useState('');
   const recognitionRef = useRef<any>(null);
   const [permissionGranted, setPermissionGranted] = useState<boolean | null>(null);
 
@@ -76,24 +78,25 @@ export const SpeechRecognitionFallback: React.FC<SpeechRecognitionFallbackProps>
 
       recognition.onresult = (event: any) => {
         let finalTranscript = '';
-        let interimTranscript = '';
+        let currentInterim = '';
 
         for (let i = event.resultIndex; i < event.results.length; i++) {
-          const transcript = event.results[i][0].transcript;
+          const resultTranscript = event.results[i][0].transcript;
           if (event.results[i].isFinal) {
-            finalTranscript += transcript;
+            finalTranscript += resultTranscript;
           } else {
-            interimTranscript += transcript;
+            currentInterim += resultTranscript;
           }
         }
 
+        // Update interim transcript for real-time display
+        setInterimTranscript(currentInterim);
+
         if (finalTranscript) {
           console.log('🗣️ Final transcript:', finalTranscript);
+          setTranscript(prev => prev + ' ' + finalTranscript);
+          setInterimTranscript(''); // Clear interim when we get final
           onTranscript(finalTranscript);
-        }
-
-        if (interimTranscript) {
-          console.log('⏳ Interim transcript:', interimTranscript);
         }
       };
 
@@ -150,9 +153,16 @@ export const SpeechRecognitionFallback: React.FC<SpeechRecognitionFallbackProps>
   const resetAndTryAgain = useCallback(async () => {
     setError(null);
     setPermissionGranted(null);
+    setTranscript('');
+    setInterimTranscript('');
     stopListening();
     await requestMicrophonePermission();
   }, [requestMicrophonePermission, stopListening]);
+
+  const clearTranscript = useCallback(() => {
+    setTranscript('');
+    setInterimTranscript('');
+  }, []);
 
   if (!isSupported) {
     return (
@@ -223,6 +233,40 @@ export const SpeechRecognitionFallback: React.FC<SpeechRecognitionFallbackProps>
           <p className="text-green-600 text-sm mt-1">
             Speak clearly in Arabic. Your speech will be detected automatically.
           </p>
+        </div>
+      )}
+
+      {/* Transcript Display */}
+      {(transcript || interimTranscript) && (
+        <div className="space-y-3 p-4 bg-gray-50 rounded-lg border">
+          <div className="flex items-center justify-between">
+            <h4 className="font-medium text-gray-700">What you said:</h4>
+            <Button onClick={clearTranscript} size="sm" variant="outline">
+              Clear
+            </Button>
+          </div>
+          
+          {transcript && (
+            <div className="bg-white rounded-lg p-3 border">
+              <p className="text-sm text-gray-600 mb-1">Final transcript:</p>
+              <div className="text-right" dir="rtl">
+                <p className="text-lg text-gray-900 font-arabic leading-relaxed">
+                  {transcript}
+                </p>
+              </div>
+            </div>
+          )}
+          
+          {interimTranscript && (
+            <div className="bg-yellow-50 rounded-lg p-3 border border-yellow-200">
+              <p className="text-sm text-yellow-700 mb-1">Currently hearing:</p>
+              <div className="text-right" dir="rtl">
+                <p className="text-lg text-yellow-800 font-arabic leading-relaxed italic">
+                  {interimTranscript}
+                </p>
+              </div>
+            </div>
+          )}
         </div>
       )}
     </div>

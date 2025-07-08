@@ -183,7 +183,7 @@ export function SimpleQuranReciter() {
       const similarity = calculateArabicSimilarity(transcript, verse.arabic)
       console.log(`🔍 Verse ${verse.id} similarity: ${similarity}%`)
       
-      if (similarity >= 75) {
+      if (similarity >= 65) {
         newHighlighted.add(verse.id)
         newIncorrect.delete(verse.id)
         foundSequentialVerses.push(verse.id)
@@ -228,7 +228,7 @@ export function SimpleQuranReciter() {
         verseRange.forEach(verse => {
           const similarity = calculateArabicSimilarity(segment.text, verse.arabic)
           
-          if (similarity >= 75) {
+          if (similarity >= 65) {
             newHighlighted.add(verse.id)
             newIncorrect.delete(verse.id)
             foundValidMatch = true
@@ -254,7 +254,7 @@ export function SimpleQuranReciter() {
       const currentVerseData = AL_FATIHA_VERSES.find(v => v.id === currentVerse)
       if (!foundValidMatch && currentVerseData) {
         const currentVerseSimilarity = calculateArabicSimilarity(transcript, currentVerseData.arabic)
-        if (currentVerseSimilarity < 75) {
+        if (currentVerseSimilarity < 65) {
           console.log(`❌ Current verse ${currentVerse} marked as incorrect (${currentVerseSimilarity}%) - incomplete or wrong recitation`)
           // Mark as incorrect if similarity is below threshold
           newIncorrect.add(currentVerse)
@@ -447,7 +447,7 @@ export function SimpleQuranReciter() {
         }
       })
       
-      if (bestMatch >= 85) {
+      if (bestMatch >= 80) {
         foundWords++
         console.log(`✅ Found word match: "${expectedWord}" ≈ "${bestMatchWord}" (${bestMatch}%)`)
       } else {
@@ -468,17 +468,19 @@ export function SimpleQuranReciter() {
     console.log(`🎯 Overall similarity: ${overallSimilarity}%`)
     
     // More lenient requirements for correct pronunciation:
-    // 1. Must have at least 85% of expected words (reduced from 90%)
-    // 2. Shouldn't be more than 150% longer than expected  
-    // 3. Overall similarity should be at least 60% (reduced from 70%)
+    // 1. Must have at least 70% of expected words (further reduced for Arabic speech recognition)
+    // 2. Shouldn't be more than 200% longer than expected (more lenient) 
+    // 3. Overall similarity should be at least 50% (further reduced)
     
-    if (wordCoverage >= 85 && extraWordsRatio <= 1.5 && overallSimilarity >= 60) {
-      const finalScore = Math.min(wordCoverage, overallSimilarity)
-      console.log(`✅ PASSED strict validation with score: ${finalScore}%`)
+    if (wordCoverage >= 70 && extraWordsRatio <= 2.0 && overallSimilarity >= 50) {
+      const finalScore = Math.max(wordCoverage, overallSimilarity)
+      console.log(`✅ PASSED lenient validation with score: ${finalScore}%`)
       return finalScore
     } else {
-      console.log(`❌ FAILED strict validation - Coverage: ${wordCoverage}%, Ratio: ${extraWordsRatio}, Overall: ${overallSimilarity}%`)
-      return Math.min(wordCoverage * 0.7, overallSimilarity * 0.7) // Reduced score for failed validation
+      console.log(`❌ FAILED validation - Coverage: ${wordCoverage}%, Ratio: ${extraWordsRatio}, Overall: ${overallSimilarity}%`)
+      // Give partial credit even for failed validation
+      const partialScore = Math.max(wordCoverage * 0.8, overallSimilarity * 0.8)
+      return Math.min(partialScore, 70) // Cap at 70% for failed strict validation
     }
   }
 
