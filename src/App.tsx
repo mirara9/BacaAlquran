@@ -13,6 +13,9 @@ const SettingsPage = React.lazy(() => import('@/pages/SettingsPage'))
 const DiagnosticsPage = React.lazy(() => import('@/pages/DiagnosticsPage'))
 const NotFoundPage = React.lazy(() => import('@/pages/NotFoundPage'))
 
+// Import test component
+import { TestSpeechRecognition } from '@/components/TestSpeechRecognition'
+
 function App() {
   return (
     <ErrorBoundary>
@@ -35,6 +38,7 @@ function App() {
               <Route path="/dashboard" element={<DashboardPage />} />
               <Route path="/settings" element={<SettingsPage />} />
               <Route path="/diagnostics" element={<DiagnosticsPage />} />
+              <Route path="/test-speech" element={<TestSpeechRecognition />} />
               <Route path="*" element={<NotFoundPage />} />
             </Routes>
           </Suspense>

@@ -52,11 +52,16 @@ export function useRealtimeSpeechRecognition(
   useEffect(() => {
     const checkSupport = async () => {
       // Check if Web Speech API is available
-      const SpeechRecognition = window.SpeechRecognition || (window as any).webkitSpeechRecognition
+      const SpeechRecognition = (window as any).SpeechRecognition || (window as any).webkitSpeechRecognition
       
       if (!SpeechRecognition) {
         setIsSupported(false)
         setError('Speech recognition not supported in this browser. Please use Chrome, Edge, or Safari.')
+        console.error('SpeechRecognition not available:', {
+          speechRecognition: !!(window as any).SpeechRecognition,
+          webkitSpeechRecognition: !!(window as any).webkitSpeechRecognition,
+          userAgent: navigator.userAgent
+        })
         return
       }
 
@@ -120,7 +125,7 @@ export function useRealtimeSpeechRecognition(
       recognitionRef.current.stop()
     }
 
-    const SpeechRecognition = window.SpeechRecognition || (window as any).webkitSpeechRecognition
+    const SpeechRecognition = (window as any).SpeechRecognition || (window as any).webkitSpeechRecognition
     const recognition = new SpeechRecognition()
 
     recognition.continuous = continuous
