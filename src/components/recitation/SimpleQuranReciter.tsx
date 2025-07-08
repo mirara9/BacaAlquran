@@ -6,6 +6,7 @@ import { Mic, MicOff, Square, Volume2, Play, Pause } from 'lucide-react'
 import { useRealtimeSpeechRecognition } from '@/hooks/useRealtimeSpeechRecognition'
 import { useTextToSpeech } from '@/hooks/useAudioPlayer'
 import { cleanArabicText, calculateSimilarity } from '@/lib/utils'
+import { SpeechRecognitionFallback } from '@/components/SpeechRecognitionFallback'
 
 // Al-Fatiha verses in proper Uthmani script
 const AL_FATIHA_VERSES = [
@@ -536,51 +537,25 @@ export function SimpleQuranReciter() {
           </CardTitle>
         </CardHeader>
         <CardContent>
-          <div className="flex justify-center space-x-4 mb-4">
-            <Button
-              onClick={isListening ? handleStopListening : handleStartListening}
-              className={`px-8 py-3 ${isListening ? 'bg-red-600 hover:bg-red-700' : 'bg-green-600 hover:bg-green-700'}`}
-              disabled={!speechRecognition.isSupported}
-            >
-              {isListening ? (
-                <>
-                  <Square className="h-5 w-5 mr-2" />
-                  Stop Listening
-                </>
-              ) : (
-                <>
-                  <Mic className="h-5 w-5 mr-2" />
-                  Start Recitation
-                </>
-              )}
-            </Button>
+          <div className="space-y-4 mb-4">
+            <SpeechRecognitionFallback
+              onTranscript={handleSpeechResult}
+              onError={(error) => {
+                console.error('Speech recognition error:', error);
+              }}
+              language="ar-SA"
+              continuous={true}
+            />
             
-            <Button
-              variant="outline"
-              onClick={resetRecitation}
-            >
-              Reset
-            </Button>
-          </div>
-
-          {!speechRecognition.isSupported && (
-            <div className="text-center text-red-600 mb-4">
-              <MicOff className="h-8 w-8 mx-auto mb-2" />
-              <p>Speech recognition not supported. Please use Chrome, Edge, or Safari.</p>
-            </div>
-          )}
-
-          {isListening && (
-            <div className="text-center text-green-600 mb-4">
-              <motion.div
-                animate={{ scale: [1, 1.1, 1] }}
-                transition={{ repeat: Infinity, duration: 1.5 }}
+            <div className="flex justify-center">
+              <Button
+                variant="outline"
+                onClick={resetRecitation}
               >
-                <Mic className="h-8 w-8 mx-auto mb-2" />
-              </motion.div>
-              <p>Listening... Start reciting Al-Fatiha</p>
+                Reset
+              </Button>
             </div>
-          )}
+          </div>
 
           {/* Progress */}
           <div className="text-center text-sm text-gray-600">
@@ -589,79 +564,28 @@ export function SimpleQuranReciter() {
         </CardContent>
       </Card>
 
-      {/* Live Recognition - Sticky Section */}
-      {(isListening || speechRecognition.transcript) && (
-        <div className="sticky top-4 z-50 mb-6">
-          <Card className="bg-blue-50 border-blue-200 shadow-lg">
-            <CardHeader className="pb-3">
-              <CardTitle className="text-lg text-blue-800 flex items-center">
-                <motion.div
-                  animate={isListening ? { scale: [1, 1.1, 1] } : { scale: 1 }}
-                  transition={{ repeat: isListening ? Infinity : 0, duration: 1.5 }}
-                  className="mr-2"
-                >
-                  <Mic className="h-5 w-5" />
-                </motion.div>
-                Live Recognition - {isListening ? 'Listening...' : 'Processing'}
-              </CardTitle>
-            </CardHeader>
-            <CardContent>
-              <div className="space-y-4">
-                {/* Current Expected Verse */}
-                <div className="bg-white rounded-lg p-3 border-l-4 border-blue-400">
-                  <p className="text-sm font-medium text-gray-700 mb-1">Currently Expected:</p>
-                  <div className="text-right" dir="rtl">
-                    <p className="text-xl text-blue-900 uthmani-font">
-                      {AL_FATIHA_VERSES.find(v => v.id === currentVerse)?.arabic}
-                    </p>
-                  </div>
-                  <p className="text-xs text-gray-600 mt-1">
-                    Verse {currentVerse}: {AL_FATIHA_VERSES.find(v => v.id === currentVerse)?.transliteration}
+      {/* Current Verse Guide */}
+      {currentVerse <= AL_FATIHA_VERSES.length && (
+        <Card className="bg-blue-50 border-blue-200">
+          <CardContent className="pt-6">
+            <div className="text-center">
+              <p className="text-sm text-blue-700 mb-3">Currently expecting verse {currentVerse}:</p>
+              <div className="bg-white rounded-lg p-4 border-l-4 border-blue-400">
+                <div className="text-right" dir="rtl">
+                  <p className="text-xl mb-2 uthmani-font text-gray-900">
+                    {AL_FATIHA_VERSES.find(v => v.id === currentVerse)?.arabic}
                   </p>
                 </div>
-
-                {/* Live Recognition Text */}
-                {speechRecognition.transcript && (
-                  <div className="bg-white rounded-lg p-3">
-                    <p className="text-sm font-medium text-gray-700 mb-2">What you said:</p>
-                    <div className="text-right mb-3" dir="rtl">
-                      <p className="text-lg text-gray-900 uthmani-font">
-                        {speechRecognition.transcript}
-                      </p>
-                    </div>
-                    
-                    {speechRecognition.interimTranscript && (
-                      <div className="text-right mb-3" dir="rtl">
-                        <p className="text-sm text-gray-600 italic uthmani-font">
-                          {speechRecognition.interimTranscript}
-                        </p>
-                      </div>
-                    )}
-                  </div>
-                )}
-
-                {/* Recognition Results */}
-                {matches.length > 0 && (
-                  <div className="space-y-2">
-                    <p className="font-medium text-blue-800 text-sm">Detection Results:</p>
-                    {matches.slice(0, 3).map((match, index) => (
-                      <div key={index} className="flex justify-between items-center text-xs bg-white rounded p-2">
-                        <span className="font-medium">Verse {match.verseId}</span>
-                        <span className={`font-medium px-2 py-1 rounded ${
-                          match.isCorrect 
-                            ? 'bg-green-100 text-green-700' 
-                            : 'bg-orange-100 text-orange-700'
-                        }`}>
-                          {match.similarity.toFixed(0)}%
-                        </span>
-                      </div>
-                    ))}
-                  </div>
-                )}
+                <p className="text-sm text-gray-600">
+                  {AL_FATIHA_VERSES.find(v => v.id === currentVerse)?.transliteration}
+                </p>
+                <p className="text-xs text-gray-500 mt-2">
+                  {AL_FATIHA_VERSES.find(v => v.id === currentVerse)?.translation}
+                </p>
               </div>
-            </CardContent>
-          </Card>
-        </div>
+            </div>
+          </CardContent>
+        </Card>
       )}
 
       {/* Combined Quran Text - All Verses in One Section */}
