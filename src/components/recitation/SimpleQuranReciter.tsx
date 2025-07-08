@@ -264,31 +264,7 @@ export function SimpleQuranReciter() {
         })
       })
 
-      // If no valid matches found, check if we should mark current verse as incorrect
-      const currentVerseData = AL_FATIHA_VERSES.find(v => v.id === currentVerse)
-      if (!foundValidMatch && currentVerseData) {
-        const currentVerseSimilarity = calculateArabicSimilarity(transcript, currentVerseData.arabic)
-        if (currentVerseSimilarity < 65) {
-          console.log(`❌ Current verse ${currentVerse} marked as incorrect (${currentVerseSimilarity}%) - incomplete or wrong recitation`)
-          // Mark as incorrect if similarity is below threshold
-          newIncorrect.add(currentVerse)
-          newHighlighted.delete(currentVerse)
-          
-          // Cancel any pending timeout so the transcript stays visible for incorrect attempts
-          if (silenceTimeout) {
-            clearTimeout(silenceTimeout)
-            setSilenceTimeout(null)
-            console.log('🚫 Cancelled transcript clearing - keeping incorrect input visible')
-          }
-          
-          // Set a longer timeout (5 seconds) for incorrect attempts so user can see what they said
-          const incorrectTimeout = setTimeout(() => {
-            clearTranscriptForNewAttempt()
-            console.log('🧹 Cleared transcript after showing incorrect attempt')
-          }, 5000)
-          setSilenceTimeout(incorrectTimeout)
-        }
-      }
+      // Don't mark verses as incorrect - just let the highlighting show correct matches
     }
     
     console.log(`🎨 Updating highlights:`, Array.from(newHighlighted))
