@@ -3,7 +3,7 @@ import { useNavigate } from 'react-router-dom'
 import { ArrowLeft, Settings } from 'lucide-react'
 import { Button } from '@/components/ui/Button'
 import { SurahSelector } from '@/components/recitation/SurahSelector'
-import { WordByWordReciter } from '@/components/recitation/WordByWordReciter'
+import { VerseLevelReciter } from '@/components/recitation/VerseLevelReciter'
 
 export default function NewRecitationPage() {
   const navigate = useNavigate()
@@ -42,7 +42,7 @@ export default function NewRecitationPage() {
               <div className="h-6 w-px bg-gray-300" />
               <div className="flex items-center space-x-2">
                 <span className="font-medium text-gray-900">
-                  {selectedSurah ? 'Al-Fatiha - Word by Word' : 'Quran Recitation'}
+                  {selectedSurah ? 'Al-Fatiha - Verse by Verse' : 'Quran Recitation'}
                 </span>
               </div>
             </div>
@@ -70,7 +70,7 @@ export default function NewRecitationPage() {
       {/* Main Content */}
       <div className="relative z-10">
         {selectedSurah ? (
-          <WordByWordReciter />
+          <VerseLevelReciter />
         ) : (
           <SurahSelector onSurahSelect={handleSurahSelect} />
         )}
