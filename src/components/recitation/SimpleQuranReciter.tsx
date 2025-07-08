@@ -189,8 +189,8 @@ export function SimpleQuranReciter() {
     // NEW LOGIC: Check for multiple verses in sequence
     console.log('🔍 Checking for multiple verses in transcript...')
     
-    // Check each verse from current onwards to see if it's in the transcript
-    const versesToCheck = AL_FATIHA_VERSES.filter(v => v.id >= currentVerse)
+    // Check ALL verses to allow reading in any order
+    const versesToCheck = AL_FATIHA_VERSES
     let foundSequentialVerses: number[] = []
     
     for (const verse of versesToCheck) {
