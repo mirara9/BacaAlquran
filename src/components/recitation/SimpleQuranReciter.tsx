@@ -131,7 +131,10 @@ export function SimpleQuranReciter() {
       }
     },
     onError: (error) => {
-      console.error('Speech recognition error:', error)
+      // Ignore "aborted" errors as they're expected during verse transitions
+      if (!error.includes('aborted')) {
+        console.error('Speech recognition error:', error)
+      }
       // setIsListening(false)
       if (silenceTimeout) {
         clearTimeout(silenceTimeout)
@@ -569,7 +572,10 @@ export function SimpleQuranReciter() {
             <SpeechRecognitionFallback
               onTranscript={handleSpeechResult}
               onError={(error) => {
-                console.error('Speech recognition error:', error);
+                // Ignore "aborted" errors as they're expected during verse transitions
+                if (!error.includes('aborted')) {
+                  console.error('Speech recognition error:', error);
+                }
               }}
               language="ar-SA"
               continuous={true}
