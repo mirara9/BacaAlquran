@@ -137,9 +137,14 @@ export function SimpleQuranReciter() {
       }
     },
     onError: (error) => {
-      // Ignore "aborted" errors as they're expected during verse transitions
-      if (!error.includes('aborted')) {
+      // Ignore common expected errors that don't require user action
+      const ignoredErrors = ['aborted', 'no-speech']
+      const hasIgnoredError = ignoredErrors.some(ignoredError => error.includes(ignoredError))
+      
+      if (!hasIgnoredError) {
         console.error('Speech recognition error:', error)
+      } else {
+        console.log(`Speech recognition ${error} (expected during normal operation)`)
       }
       // setIsListening(false)
       if (silenceTimeout) {

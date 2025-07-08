@@ -101,6 +101,14 @@ export const SpeechRecognitionFallback: React.FC<SpeechRecognitionFallbackProps>
       };
 
       recognition.onerror = (event: any) => {
+        // Don't show common expected errors that don't require user action
+        const ignoredErrors = ['aborted', 'no-speech'];
+        
+        if (ignoredErrors.includes(event.error)) {
+          console.log(`Speech recognition ${event.error} (expected during normal operation)`);
+          return; // Don't show these errors to the user
+        }
+        
         console.error('❌ Speech recognition error:', event.error);
         let errorMsg = `Speech recognition error: ${event.error}`;
         
@@ -108,9 +116,6 @@ export const SpeechRecognitionFallback: React.FC<SpeechRecognitionFallbackProps>
           case 'not-allowed':
             errorMsg = 'Microphone access denied. Please allow microphone access.';
             setPermissionGranted(false);
-            break;
-          case 'no-speech':
-            errorMsg = 'No speech detected. Please speak clearly.';
             break;
           case 'audio-capture':
             errorMsg = 'No microphone found. Please check your microphone.';
