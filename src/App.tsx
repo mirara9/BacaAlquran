@@ -10,6 +10,7 @@ const RecitationPage = React.lazy(() => import('@/pages/NewRecitationPage'))
 const DashboardPage = React.lazy(() => import('@/pages/DashboardPage'))
 const SettingsPage = React.lazy(() => import('@/pages/SettingsPage'))
 const DiagnosticsPage = React.lazy(() => import('@/pages/DiagnosticsPage'))
+const DebugArabicPage = React.lazy(() => import('@/pages/DebugArabicPage'))
 const NotFoundPage = React.lazy(() => import('@/pages/NotFoundPage'))
 
 // Import test component
@@ -37,6 +38,7 @@ function App() {
               <Route path="/dashboard" element={<DashboardPage />} />
               <Route path="/settings" element={<SettingsPage />} />
               <Route path="/diagnostics" element={<DiagnosticsPage />} />
+              <Route path="/debug-arabic" element={<DebugArabicPage />} />
               <Route path="/test-speech" element={<TestSpeechRecognition />} />
               <Route path="*" element={<NotFoundPage />} />
             </Routes>

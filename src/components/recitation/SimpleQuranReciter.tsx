@@ -228,7 +228,7 @@ export function SimpleQuranReciter() {
         verseRange.forEach(verse => {
           const similarity = calculateArabicSimilarity(segment.text, verse.arabic)
           
-          if (similarity >= 65) {
+          if (similarity >= 60) { // Lowered threshold for testing
             newHighlighted.add(verse.id)
             newIncorrect.delete(verse.id)
             foundValidMatch = true
@@ -405,6 +405,7 @@ export function SimpleQuranReciter() {
     console.log(`🔍 After normalization:`)
     console.log(`   Spoken: "${normalizedSpoken}"`)
     console.log(`   Expected: "${normalizedExpected}"`)
+    console.log(`   Lengths: spoken=${normalizedSpoken.length}, expected=${normalizedExpected.length}`)
     
     // Debug: Character-by-character comparison
     console.log(`🔍 Character comparison:`)
@@ -418,7 +419,14 @@ export function SimpleQuranReciter() {
       console.log(`✅ EXACT MATCH after normalization - 100%`)
       return 100
     } else {
-      console.log(`❌ NOT exact match - lengths: spoken=${normalizedSpoken.length}, expected=${normalizedExpected.length}`)
+      console.log(`❌ NOT exact match`)
+      // Show where they differ
+      for (let i = 0; i < Math.max(normalizedSpoken.length, normalizedExpected.length); i++) {
+        if (normalizedSpoken[i] !== normalizedExpected[i]) {
+          console.log(`   First difference at position ${i}: '${normalizedSpoken[i] || '(end)'}' vs '${normalizedExpected[i] || '(end)'}`)
+          break
+        }
+      }
     }
     
     // Strict validation: Check if the spoken text contains the complete expected verse

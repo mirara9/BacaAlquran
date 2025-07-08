@@ -200,8 +200,8 @@ export function cleanArabicText(text: string): string {
   
   // Normalize common Arabic character variations (especially important for Uthmani vs modern)
   cleaned = cleaned
-    // Normalize all Alef variations to basic Alef
-    .replace(/[أإآٱا]/g, 'ا')
+    // Normalize all Alef variations to basic Alef (including Alef Wasla ٱ)
+    .replace(/[أإآٱاٲٳ]/g, 'ا')
     // Normalize Heh variations (including Teh Marbuta)
     .replace(/[هةۃۀ]/g, 'ه')
     // Normalize Yeh variations
