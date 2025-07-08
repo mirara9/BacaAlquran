@@ -20,13 +20,25 @@ export interface MatchingResult {
 
 /**
  * Clean and normalize Arabic text for comparison
+ * Enhanced to handle both Uthmani and Standard Arabic scripts
  */
 export function normalizeArabicText(text: string): string {
   return cleanArabicText(text)
+    // Handle Uthmani script characters
+    .replace(/ٱ/g, 'ا') // Alif with Wasla -> regular Alif
+    .replace(/ـٰ/g, 'ا') // Superscript Alif -> regular Alif
+    // Remove all diacritics more aggressively
+    .replace(/[\u064B-\u065F\u0670\u06D6-\u06ED]/g, '') // Remove all Arabic diacritics
+    .replace(/ـ/g, '') // Remove tatweel (Arabic kashida)
+    // Remove all short vowels and diacritics
     .replace(/[ً-ٍ]/g, '') // Remove short vowels
     .replace(/[ؤئء]/g, 'ا') // Normalize alif variations
     .replace(/ة/g, 'ه') // Normalize taa marbouta
-    .replace(/\s+/g, ' ') // Normalize whitespace
+    // Handle specific verse 4 pronunciation variations
+    .replace(/مالك/g, 'ملك') // "Maalik" normalization (after diacritic removal)
+    .replace(/ملك/g, 'ملك') // "Malik" normalization (already normalized)
+    // Normalize whitespace
+    .replace(/\s+/g, ' ')
     .trim()
     .toLowerCase()
 }
@@ -207,6 +219,44 @@ export function matchRealTimeWords(
     nextWordId,
     progress
   }
+}
+
+/**
+ * Test verse 4 pronunciation variations
+ * This function specifically tests the controversial "Maalik" vs "Malik" pronunciation
+ */
+export function testVerse4Pronunciations(): void {
+  console.log('🧪 Testing Verse 4 Pronunciation Variations:')
+  
+  const verse4Variations = [
+    'مَالِكِ يَوْمِ الدِّينِ',  // Standard form
+    'مَلِكِ يَوْمِ الدِّينِ',   // Alternative pronunciation
+    'مَـٰلِكِ يَوْمِ ٱلدِّينِ', // Uthmani script
+    'ملك يوم الدين',          // Simplified form
+    'مالك يوم الدين'          // Common spoken form
+  ]
+  
+  const spokenVariations = [
+    'مالك يوم الدين',
+    'ملك يوم الدين', 
+    'مااالك يوم الدين',
+    'مالك يووم الدين'
+  ]
+  
+  verse4Variations.forEach((expected, i) => {
+    console.log(`\n📝 Testing expected: "${expected}"`)
+    
+    spokenVariations.forEach((spoken, j) => {
+      const similarity = calculateArabicWordSimilarity(expected, spoken)
+      console.log(`  🎤 Spoken: "${spoken}" -> Similarity: ${similarity}%`)
+      
+      if (similarity >= 65) {
+        console.log('  ✅ Would be accepted (threshold: 65%)')
+      } else {
+        console.log('  ❌ Would be rejected')
+      }
+    })
+  })
 }
 
 /**

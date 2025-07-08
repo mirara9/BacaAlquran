@@ -57,6 +57,69 @@ const mockVerses: QuranVerse[] = [
       { arabic: 'الرَّحْمَنِ', transliteration: 'Ar-raḥmāni', translation: 'The Entirely Merciful' },
       { arabic: 'الرَّحِيمِ', transliteration: 'r-raḥīm', translation: 'the Especially Merciful' }
     ]
+  },
+  {
+    id: 'fatiha-4',
+    surahNumber: 1,
+    verseNumber: 4,
+    arabicText: 'مَالِكِ يَوْمِ الدِّينِ',
+    transliteration: 'Māliki yawmi d-dīn',
+    translation: 'Sovereign of the Day of Recompense.',
+    audioUrl: '/audio/fatiha-4.mp3',
+    words: [
+      { arabic: 'مَالِكِ', transliteration: 'maliki', translation: 'Sovereign' },
+      { arabic: 'يَوْمِ', transliteration: 'yawmi', translation: 'Day' },
+      { arabic: 'الدِّينِ', transliteration: 'ad-deen', translation: 'of Recompense' }
+    ]
+  },
+  {
+    id: 'fatiha-5',
+    surahNumber: 1,
+    verseNumber: 5,
+    arabicText: 'إِيَّاكَ نَعْبُدُ وَإِيَّاكَ نَسْتَعِينُ',
+    transliteration: 'Iyyāka naʿbudu wa-iyyāka nastaʿīn',
+    translation: 'It is You we worship and You we ask for help.',
+    audioUrl: '/audio/fatiha-5.mp3',
+    words: [
+      { arabic: 'إِيَّاكَ', transliteration: 'iyyāka', translation: 'You' },
+      { arabic: 'نَعْبُدُ', transliteration: 'naʿbudu', translation: 'we worship' },
+      { arabic: 'وَإِيَّاكَ', transliteration: 'wa-iyyāka', translation: 'and You' },
+      { arabic: 'نَسْتَعِينُ', transliteration: 'nastaʿīn', translation: 'we ask for help' }
+    ]
+  },
+  {
+    id: 'fatiha-6',
+    surahNumber: 1,
+    verseNumber: 6,
+    arabicText: 'اهْدِنَا الصِّرَاطَ الْمُسْتَقِيمَ',
+    transliteration: 'Ihdinā ṣ-ṣirāṭa l-mustaqīm',
+    translation: 'Guide us to the straight path.',
+    audioUrl: '/audio/fatiha-6.mp3',
+    words: [
+      { arabic: 'اهْدِنَا', transliteration: 'ihdinā', translation: 'Guide us' },
+      { arabic: 'الصِّرَاطَ', transliteration: 'aṣ-ṣirāṭa', translation: 'the path' },
+      { arabic: 'الْمُسْتَقِيمَ', transliteration: 'al-mustaqīm', translation: 'the straight' }
+    ]
+  },
+  {
+    id: 'fatiha-7',
+    surahNumber: 1,
+    verseNumber: 7,
+    arabicText: 'صِرَاطَ الَّذِينَ أَنْعَمْتَ عَلَيْهِمْ غَيْرِ الْمَغْضُوبِ عَلَيْهِمْ وَلَا الضَّالِّينَ',
+    transliteration: 'Ṣirāṭa lladhīna anʿamta ʿalayhim ghayri l-maghḍūbi ʿalayhim wa-lā ḍ-ḍāllīn',
+    translation: 'The path of those upon whom You have bestowed favor, not of those who have evoked [Your] anger or of those who are astray.',
+    audioUrl: '/audio/fatiha-7.mp3',
+    words: [
+      { arabic: 'صِرَاطَ', transliteration: 'ṣirāṭa', translation: 'The path' },
+      { arabic: 'الَّذِينَ', transliteration: 'alladhīna', translation: 'of those' },
+      { arabic: 'أَنْعَمْتَ', transliteration: 'anʿamta', translation: 'You have bestowed favor' },
+      { arabic: 'عَلَيْهِمْ', transliteration: 'ʿalayhim', translation: 'upon them' },
+      { arabic: 'غَيْرِ', transliteration: 'ghayri', translation: 'not' },
+      { arabic: 'الْمَغْضُوبِ', transliteration: 'al-maghḍūbi', translation: 'those who have evoked anger' },
+      { arabic: 'عَلَيْهِمْ', transliteration: 'ʿalayhim', translation: 'upon them' },
+      { arabic: 'وَلَا', transliteration: 'wa-lā', translation: 'and not' },
+      { arabic: 'الضَّالِّينَ', transliteration: 'aḍ-ḍāllīn', translation: 'those who are astray' }
+    ]
   }
 ]
 

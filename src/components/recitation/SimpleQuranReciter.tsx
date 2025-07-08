@@ -7,6 +7,7 @@ import { useRealtimeSpeechRecognition } from '@/hooks/useRealtimeSpeechRecogniti
 import { useTextToSpeech } from '@/hooks/useAudioPlayer'
 import { cleanArabicText, calculateSimilarity } from '@/lib/utils'
 import { SpeechRecognitionFallback } from '@/components/SpeechRecognitionFallback'
+import { testVerse4Pronunciations, normalizeArabicText } from '@/lib/quran/wordMatching'
 
 // Al-Fatiha verses in proper Uthmani script
 const AL_FATIHA_VERSES = [
@@ -30,7 +31,7 @@ const AL_FATIHA_VERSES = [
   },
   {
     id: 4,
-    arabic: 'مَـٰلِكِ يَوْمِ ٱلدِّينِ',
+    arabic: 'مَالِكِ يَوْمِ الدِّينِ',
     transliteration: 'Māliki yawmi d-dīn',
     translation: 'Sovereign of the Day of Recompense.'
   },
@@ -171,6 +172,8 @@ export function SimpleQuranReciter() {
       }, 200)
     }, 200)
   }, [currentVerse, clearTranscriptForNewAttempt, speechRecognition])
+
+  // Test verse 4 pronunciations on component mount (removed for production)
 
   // Process final speech recognition results
   const handleSpeechResult = useCallback((transcript: string) => {
