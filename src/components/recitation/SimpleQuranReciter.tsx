@@ -98,15 +98,11 @@ export function SimpleQuranReciter() {
       
       handleSpeechResult(fullTranscript)
       
-      // Set a 10-second timeout to clear transcript after silence
+      // Set a timeout to clear transcript after silence (but keep listening)
       const newTimeout = setTimeout(() => {
         clearTranscriptForNewAttempt()
-        // Stop listening after 10 seconds of silence
-        if (speechRecognition.isListening) {
-          speechRecognition.stopListening()
-          console.log('⏰ Stopped listening after 10 seconds of silence')
-        }
-      }, 10000)
+        console.log('🧹 Cleared transcript after silence - continuing to listen')
+      }, 5000)
       setSilenceTimeout(newTimeout)
     },
     onInterimResult: (interimText) => {
@@ -170,18 +166,10 @@ export function SimpleQuranReciter() {
     console.log(`🔄 Advancing from verse ${currentVerse} to verse ${nextVerseId}`)
     setCurrentVerse(nextVerseId)
     
-    // Force stop and restart speech recognition to ensure clean slate
-    speechRecognition.stopListening()
-    setTimeout(() => {
-      clearTranscriptForNewAttempt()
-      console.log('🧹 Advanced to new verse (preserved highlights)')
-      // Continue listening without interruption for continuous recitation
-      setTimeout(() => {
-        speechRecognition.startListening()
-        console.log('🎤 Speech recognition continued for next verse')
-      }, 200)
-    }, 200)
-  }, [currentVerse, clearTranscriptForNewAttempt, speechRecognition])
+    // Clear transcript for new verse but keep listening
+    clearTranscriptForNewAttempt()
+    console.log('🧹 Advanced to new verse (preserved highlights) - continuing to listen')
+  }, [currentVerse, clearTranscriptForNewAttempt])
 
   // Test verse 4 pronunciations on component mount (removed for production)
 
@@ -312,16 +300,12 @@ export function SimpleQuranReciter() {
     setIncorrectVerses(newIncorrect)
     setMatches(allMatches)
     
-    // Check if entire surah is completed
+    // Check if entire surah is completed (just log, don't auto-stop)
     if (newHighlighted.size === AL_FATIHA_VERSES.length) {
-      console.log('🎉 Entire Al-Fatiha completed! Auto-stopping speech recognition.')
-      setTimeout(() => {
-        speechRecognition.stopListening()
-        clearTranscriptForNewAttempt()
-      }, 2000) // Give 2 seconds to show completion
+      console.log('🎉 Entire Al-Fatiha completed! Continuing to listen for more recitation.')
     }
     
-  }, [currentVerse, highlightedVerses, incorrectVerses, matches, advanceToNextVerse, speechRecognition, clearTranscriptForNewAttempt])
+  }, [currentVerse, highlightedVerses, incorrectVerses, matches, advanceToNextVerse, clearTranscriptForNewAttempt])
 
   // Extract individual verse segments from continuous speech
   const extractVerseSegments = (transcript: string): { text: string; startIndex: number }[] => {
