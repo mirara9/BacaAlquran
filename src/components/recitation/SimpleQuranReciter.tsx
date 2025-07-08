@@ -160,9 +160,13 @@ export function SimpleQuranReciter() {
     speechRecognition.stopListening()
     setTimeout(() => {
       clearTranscriptForNewAttempt()
-      speechRecognition.startListening()
       console.log('🧹 Advanced to new verse (preserved highlights)')
-    }, 100)
+      // Restart speech recognition automatically
+      setTimeout(() => {
+        speechRecognition.startListening()
+        console.log('🎤 Speech recognition restarted for next verse')
+      }, 200)
+    }, 200)
   }, [currentVerse, clearTranscriptForNewAttempt, speechRecognition])
 
   // Process final speech recognition results
