@@ -22,6 +22,7 @@ export function cleanArabicText(text: string): string {
     .replace(/آ/g, 'ا') // Convert Alif with Madda to regular Alif
     .replace(/ة/g, 'ه') // Convert Taa Marbuta to regular Haa
     .replace(/ى/g, 'ي') // Convert Alif Maksura to regular Yaa
+    .replace(/العالمين/g, 'العلمين') // Normalize al-alameen variant
     .replace(/\s+/g, ' ') // Normalize whitespace
     .trim();
 }

@@ -207,7 +207,9 @@ export function SimpleQuranReciter() {
 
     // If we found any verses, advance to the next unread verse
     if (foundSequentialVerses.length > 0) {
+      console.log(`🎯 Found sequential verses: [${foundSequentialVerses.join(', ')}], highest: ${highestVerseFound}`)
       const nextVerseId = Math.min(highestVerseFound + 1, AL_FATIHA_VERSES.length)
+      console.log(`🔄 Will advance to verse: ${nextVerseId}`)
       if (nextVerseId <= AL_FATIHA_VERSES.length) {
         advanceToNextVerse(nextVerseId)
       }
