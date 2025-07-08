@@ -448,14 +448,17 @@ export function SimpleQuranReciter() {
       let bestMatchWord = ''
       
       spokenWords.forEach(spokenWord => {
-        const wordSimilarity = calculateSimilarity(spokenWord, expectedWord)
+        // Normalize both words before comparison
+        const normalizedSpokenWord = cleanArabicText(spokenWord)
+        const normalizedExpectedWord = cleanArabicText(expectedWord)
+        const wordSimilarity = calculateSimilarity(normalizedSpokenWord, normalizedExpectedWord)
         if (wordSimilarity > bestMatch) {
           bestMatch = wordSimilarity
           bestMatchWord = spokenWord
         }
       })
       
-      if (bestMatch >= 80) {
+      if (bestMatch >= 70) { // Lowered from 80% to 70% for Arabic speech recognition
         foundWords++
         console.log(`✅ Found word match: "${expectedWord}" ≈ "${bestMatchWord}" (${bestMatch}%)`)
       } else {
