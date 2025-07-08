@@ -219,10 +219,17 @@ export function SimpleQuranReciter() {
       console.log(`🎯 Multiple verses detected: ${foundSequentialVerses.join(', ')}`)
     }
 
-    // If we found any verses, just update highlights
+    // If we found any verses, update highlights AND advance current verse
     if (foundSequentialVerses.length > 0) {
       console.log(`🎯 Found sequential verses: [${foundSequentialVerses.join(', ')}], highest: ${highestVerseFound}`)
-      // Don't advance verse here - just let the highlighting work
+      // Advance to the next unread verse
+      const nextUnreadVerse = AL_FATIHA_VERSES.find(v => v.id > highestVerseFound && !newHighlighted.has(v.id))
+      if (nextUnreadVerse) {
+        advanceToNextVerse(nextUnreadVerse.id)
+      } else if (highestVerseFound === AL_FATIHA_VERSES.length) {
+        // All verses completed
+        console.log('🎉 All verses completed!')
+      }
     } else {
       // Fallback: try the segmentation approach for complex cases
       const verseSegments = extractVerseSegments(transcript)
@@ -259,6 +266,14 @@ export function SimpleQuranReciter() {
       })
 
       // Don't mark verses as incorrect - just let the highlighting show correct matches
+      
+      // If we found valid matches in fallback, advance current verse
+      if (foundValidMatch && highestVerseFound >= currentVerse) {
+        const nextUnreadVerse = AL_FATIHA_VERSES.find(v => v.id > highestVerseFound && !newHighlighted.has(v.id))
+        if (nextUnreadVerse) {
+          advanceToNextVerse(nextUnreadVerse.id)
+        }
+      }
     }
     
     console.log(`🎨 Updating highlights:`, Array.from(newHighlighted))
@@ -572,7 +587,7 @@ export function SimpleQuranReciter() {
       </Card>
 
       {/* Current Verse Guide */}
-      {currentVerse <= AL_FATIHA_VERSES.length && (
+      {currentVerse <= AL_FATIHA_VERSES.length && highlightedVerses.size < AL_FATIHA_VERSES.length && (
         <Card className="bg-blue-50 border-blue-200">
           <CardContent className="pt-6">
             <div className="text-center">
@@ -590,6 +605,18 @@ export function SimpleQuranReciter() {
                   {AL_FATIHA_VERSES.find(v => v.id === currentVerse)?.translation}
                 </p>
               </div>
+            </div>
+          </CardContent>
+        </Card>
+      )}
+      
+      {/* Completion Message */}
+      {highlightedVerses.size === AL_FATIHA_VERSES.length && (
+        <Card className="bg-green-50 border-green-200">
+          <CardContent className="pt-6">
+            <div className="text-center">
+              <p className="text-lg text-green-700 font-semibold mb-2">🎉 Congratulations!</p>
+              <p className="text-sm text-green-600">You have completed all verses of Al-Fatiha!</p>
             </div>
           </CardContent>
         </Card>
