@@ -15,6 +15,13 @@ export function cleanArabicText(text: string): string {
   // Remove diacritics and normalize Arabic text
   return text
     .replace(/[\u064B-\u065F\u0670\u06D6-\u06ED]/g, '') // Remove diacritics
+    .replace(/ٱ/g, 'ا') // Convert Alif Wasla to regular Alif
+    .replace(/ـ/g, '') // Remove Tatweel (Kashida)
+    .replace(/أ/g, 'ا') // Convert Alif with Hamza above to regular Alif
+    .replace(/إ/g, 'ا') // Convert Alif with Hamza below to regular Alif
+    .replace(/آ/g, 'ا') // Convert Alif with Madda to regular Alif
+    .replace(/ة/g, 'ه') // Convert Taa Marbuta to regular Haa
+    .replace(/ى/g, 'ي') // Convert Alif Maksura to regular Yaa
     .replace(/\s+/g, ' ') // Normalize whitespace
     .trim();
 }
