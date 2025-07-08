@@ -219,15 +219,10 @@ export function SimpleQuranReciter() {
       console.log(`🎯 Multiple verses detected: ${foundSequentialVerses.join(', ')}`)
     }
 
-    // If we found any verses, advance to the next unread verse
+    // If we found any verses, just update highlights
     if (foundSequentialVerses.length > 0) {
       console.log(`🎯 Found sequential verses: [${foundSequentialVerses.join(', ')}], highest: ${highestVerseFound}`)
-      const nextVerseId = Math.min(highestVerseFound + 1, AL_FATIHA_VERSES.length)
-      console.log(`🔄 Will advance to verse: ${nextVerseId}`)
-      if (nextVerseId <= AL_FATIHA_VERSES.length) {
-        advanceToNextVerse(nextVerseId)
-      }
-      // Skip fallback processing since we already found valid matches
+      // Don't advance verse here - just let the highlighting work
     } else {
       // Fallback: try the segmentation approach for complex cases
       const verseSegments = extractVerseSegments(transcript)
@@ -255,10 +250,9 @@ export function SimpleQuranReciter() {
               isCorrect: true
             })
 
-            // Update current verse to the highest correctly read verse
-            if (verse.id >= currentVerse) {
-              const nextVerseId = Math.min(verse.id + 1, AL_FATIHA_VERSES.length)
-              advanceToNextVerse(nextVerseId)
+            // Just track the highest verse found, don't advance yet
+            if (verse.id > highestVerseFound) {
+              highestVerseFound = verse.id
             }
           }
         })
