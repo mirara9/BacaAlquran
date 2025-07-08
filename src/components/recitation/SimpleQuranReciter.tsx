@@ -236,11 +236,8 @@ export function SimpleQuranReciter() {
       let foundValidMatch = false
       
       verseSegments.forEach(segment => {
-        // Only check verses around the current verse (±2 range)
-        const verseRange = AL_FATIHA_VERSES.filter(v => 
-          v.id >= Math.max(1, currentVerse - 2) && 
-          v.id <= Math.min(AL_FATIHA_VERSES.length, currentVerse + 3)
-        )
+        // Check all verses to allow reading out of order
+        const verseRange = AL_FATIHA_VERSES
         
         verseRange.forEach(verse => {
           const similarity = calculateArabicSimilarity(segment.text, verse.arabic)
