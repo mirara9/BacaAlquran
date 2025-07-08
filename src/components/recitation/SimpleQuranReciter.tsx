@@ -280,6 +280,8 @@ export function SimpleQuranReciter() {
       }
     }
     
+    console.log(`🎨 Updating highlights:`, Array.from(newHighlighted))
+    console.log(`❌ Updating incorrect:`, Array.from(newIncorrect))
     setHighlightedVerses(newHighlighted)
     setIncorrectVerses(newIncorrect)
     setMatches(allMatches)
