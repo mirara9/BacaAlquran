@@ -126,9 +126,9 @@ export function VerseLevelReciter() {
       if (!state.isListening) return
       
       const transcript = result.transcript.trim()
-      console.log('📝 Full transcript received:', transcript)
+      console.log('📝 Final transcript received:', transcript)
       
-      // Accumulate transcript
+      // Accumulate final transcript (this is the complete recognized text)
       setState(prev => ({ 
         ...prev, 
         accumulatedTranscript: transcript 
@@ -139,12 +139,14 @@ export function VerseLevelReciter() {
       
       // Set silence timeout to detect end of verse (3 seconds)
       silenceTimeoutRef.current = setTimeout(() => {
-        console.log('🔇 Silence detected - processing verse')
+        console.log('🔇 Silence detected - processing verse with transcript:', transcript)
         processVerseRecitation(transcript)
       }, 3000)
     },
     onInterimResult: (interimText) => {
       if (!state.isListening) return
+      
+      console.log('🎤 Interim transcript:', interimText)
       
       // Clear silence timeout during active speech
       if (silenceTimeoutRef.current && interimText.trim()) {
@@ -152,15 +154,15 @@ export function VerseLevelReciter() {
         silenceTimeoutRef.current = null
       }
       
-      // Update accumulated transcript with interim results
+      // Show interim results but don't overwrite final transcript
       setState(prev => ({ 
         ...prev, 
-        accumulatedTranscript: interimText 
+        accumulatedTranscript: interimText || prev.accumulatedTranscript
       }))
     },
     onStart: () => {
-      console.log('🎤 Speech recognition started')
-      setStatusMessage('Listening for your recitation...')
+      console.log('🎤 Speech recognition started successfully')
+      setStatusMessage('🎤 Recording... Speak the highlighted verse now.')
     },
     onEnd: () => {
       console.log('🎤 Speech recognition ended')
@@ -173,6 +175,8 @@ export function VerseLevelReciter() {
       if (!ignoredErrors.some(ignoredError => error.includes(ignoredError))) {
         console.error('Speech recognition error:', error)
         setStatusMessage(`Error: ${error}`)
+      } else {
+        console.log(`Speech recognition ${error} (expected during operation)`)
       }
     }
   })
@@ -383,6 +387,13 @@ export function VerseLevelReciter() {
   // Control functions
   const startRecitation = () => {
     console.log('🎬 Starting recitation for verse', currentVerse?.id)
+    console.log('🔧 Speech recognition hook available:', !!speechRecognition)
+    console.log('🔧 Speech recognition supported:', speechRecognition.isSupported)
+    console.log('🔧 Speech recognition error:', speechRecognition.error)
+    
+    // Clear any existing transcript first
+    speechRecognition.clearTranscript()
+    
     setState(prev => ({ 
       ...prev, 
       isReciting: true, 
@@ -391,15 +402,19 @@ export function VerseLevelReciter() {
       recordingStartTime: Date.now()
     }))
     
+    console.log('📞 Calling speechRecognition.startListening()')
     speechRecognition.startListening()
     setStatusMessage('🎤 Recording... Recite the highlighted verse completely.')
     
     // Set maximum recording timeout (30 seconds)
     recordingTimeoutRef.current = setTimeout(() => {
       console.log('⏰ Recording timeout reached')
-      if (state.accumulatedTranscript.trim()) {
-        processVerseRecitation(state.accumulatedTranscript)
+      const currentTranscript = state.accumulatedTranscript || speechRecognition.transcript
+      if (currentTranscript.trim()) {
+        console.log('⏰ Processing transcript from timeout:', currentTranscript)
+        processVerseRecitation(currentTranscript)
       } else {
+        console.log('⏰ No transcript available at timeout')
         setStatusMessage('Recording timed out. Please try again.')
         stopRecitation()
       }
@@ -415,11 +430,26 @@ export function VerseLevelReciter() {
   }
 
   const checkVerse = () => {
+    console.log('🔍 Check verse triggered')
+    console.log('📝 Current accumulated transcript:', `"${state.accumulatedTranscript}"`)
+    console.log('🎤 Current listening state:', state.isListening)
+    console.log('📱 Current app state:', state)
+    
     if (state.accumulatedTranscript.trim()) {
-      console.log('✅ Manual verse check triggered')
+      console.log('✅ Manual verse check triggered with transcript:', state.accumulatedTranscript)
       processVerseRecitation(state.accumulatedTranscript)
     } else {
+      console.log('❌ No transcript found for verification')
       setStatusMessage('No recitation detected. Please recite the verse first.')
+      
+      // Also try to get any transcript from the speech recognition directly
+      const directTranscript = speechRecognition.transcript
+      console.log('🔍 Direct transcript from hook:', `"${directTranscript}"`)
+      
+      if (directTranscript.trim()) {
+        console.log('🔄 Using direct transcript for processing')
+        processVerseRecitation(directTranscript)
+      }
     }
   }
 
@@ -621,11 +651,27 @@ export function VerseLevelReciter() {
               </div>
             )}
 
+            {/* Recording Status */}
+            {state.isListening && (
+              <div className="text-center bg-red-50 p-3 rounded border border-red-200">
+                <div className="flex items-center justify-center gap-2 mb-2">
+                  <div className="w-3 h-3 bg-red-500 rounded-full animate-pulse"></div>
+                  <p className="text-sm text-red-600 font-medium">Recording Active</p>
+                </div>
+                {speechRecognition.transcript && (
+                  <p className="text-xs text-gray-500">Hook transcript: "{speechRecognition.transcript}"</p>
+                )}
+                {speechRecognition.interimTranscript && (
+                  <p className="text-xs text-gray-500">Interim: "{speechRecognition.interimTranscript}"</p>
+                )}
+              </div>
+            )}
+
             {/* Current Transcript Display */}
-            {state.accumulatedTranscript && state.isListening && (
-              <div className="text-center bg-gray-50 p-3 rounded border">
-                <p className="text-sm text-gray-600 mb-1">Currently hearing:</p>
-                <p className="text-arabic" dir="rtl">{state.accumulatedTranscript}</p>
+            {state.accumulatedTranscript && (
+              <div className="text-center bg-blue-50 p-3 rounded border border-blue-200">
+                <p className="text-sm text-blue-600 mb-1">Detected speech:</p>
+                <p className="text-arabic font-medium" dir="rtl">{state.accumulatedTranscript}</p>
               </div>
             )}
 
