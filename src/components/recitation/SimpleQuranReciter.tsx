@@ -2,7 +2,7 @@ import { useState, useCallback, useEffect } from 'react'
 import { motion } from 'framer-motion'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/Card'
 import { Button } from '@/components/ui/Button'
-import { Mic, MicOff, Square, Volume2, Play, Pause } from 'lucide-react'
+import { Volume2 } from 'lucide-react'
 import { useRealtimeSpeechRecognition } from '@/hooks/useRealtimeSpeechRecognition'
 import { useTextToSpeech } from '@/hooks/useAudioPlayer'
 import { cleanArabicText, calculateSimilarity } from '@/lib/utils'
@@ -65,7 +65,7 @@ export function SimpleQuranReciter() {
   const [currentVerse, setCurrentVerse] = useState<number>(1)
   const [highlightedVerses, setHighlightedVerses] = useState<Set<number>>(new Set())
   const [incorrectVerses, setIncorrectVerses] = useState<Set<number>>(new Set())
-  const [isListening, setIsListening] = useState(false)
+  // const [isListening, setIsListening] = useState(false)
   const [matches, setMatches] = useState<RecitationMatch[]>([])
   const [silenceTimeout, setSilenceTimeout] = useState<NodeJS.Timeout | null>(null)
 
@@ -115,7 +115,7 @@ export function SimpleQuranReciter() {
       }
     },
     onStart: () => {
-      setIsListening(true)
+      // setIsListening(true)
       // Clear any existing timeouts when starting
       if (silenceTimeout) {
         clearTimeout(silenceTimeout)
@@ -123,7 +123,7 @@ export function SimpleQuranReciter() {
       }
     },
     onEnd: () => {
-      setIsListening(false)
+      // setIsListening(false)
       // Clear timeout when stopping
       if (silenceTimeout) {
         clearTimeout(silenceTimeout)
@@ -132,7 +132,7 @@ export function SimpleQuranReciter() {
     },
     onError: (error) => {
       console.error('Speech recognition error:', error)
-      setIsListening(false)
+      // setIsListening(false)
       if (silenceTimeout) {
         clearTimeout(silenceTimeout)
         setSilenceTimeout(null)
@@ -289,10 +289,10 @@ export function SimpleQuranReciter() {
     const normalizedTranscript = cleanArabicText(transcript.trim())
     
     // Known verse patterns and key phrases for segmentation
-    const verseMarkers = [
-      'بسم الله', 'الحمد لله', 'الرحمن الرحيم', 'مالك يوم الدين', 
-      'اياك نعبد', 'اهدنا الصراط', 'صراط الذين'
-    ]
+    // const verseMarkers = [
+    //   'بسم الله', 'الحمد لله', 'الرحمن الرحيم', 'مالك يوم الدين', 
+    //   'اياك نعبد', 'اهدنا الصراط', 'صراط الذين'
+    // ]
     
     // First, try to match complete verses
     AL_FATIHA_VERSES.forEach(verse => {
@@ -434,7 +434,7 @@ export function SimpleQuranReciter() {
     let foundWords = 0
     let totalExpectedWords = expectedWords.length
     
-    expectedWords.forEach((expectedWord, index) => {
+    expectedWords.forEach((expectedWord) => {
       // Check if this expected word (or very similar) appears in spoken text
       let bestMatch = 0
       let bestMatchWord = ''
@@ -484,13 +484,13 @@ export function SimpleQuranReciter() {
     }
   }
 
-  const handleStartListening = () => {
-    speechRecognition.startListening()
-  }
+  // const handleStartListening = () => {
+  //   speechRecognition.startListening()
+  // }
 
-  const handleStopListening = () => {
-    speechRecognition.stopListening()
-  }
+  // const handleStopListening = () => {
+  //   speechRecognition.stopListening()
+  // }
 
   const handlePlayVerse = (verseId: number) => {
     const verse = AL_FATIHA_VERSES.find(v => v.id === verseId)
@@ -513,18 +513,18 @@ export function SimpleQuranReciter() {
     }
   }
 
-  const getVerseStatusColor = (verseId: number) => {
-    if (highlightedVerses.has(verseId)) {
-      return 'bg-green-100 border-green-300 text-green-900'
-    }
-    if (incorrectVerses.has(verseId)) {
-      return 'bg-red-100 border-red-300 text-red-900'
-    }
-    if (verseId === currentVerse) {
-      return 'bg-blue-50 border-blue-300 text-blue-900'
-    }
-    return 'bg-white border-gray-200'
-  }
+  // const getVerseStatusColor = (verseId: number) => {
+  //   if (highlightedVerses.has(verseId)) {
+  //     return 'bg-green-100 border-green-300 text-green-900'
+  //   }
+  //   if (incorrectVerses.has(verseId)) {
+  //     return 'bg-red-100 border-red-300 text-red-900'
+  //   }
+  //   if (verseId === currentVerse) {
+  //     return 'bg-blue-50 border-blue-300 text-blue-900'
+  //   }
+  //   return 'bg-white border-gray-200'
+  // }
 
   return (
     <div className="max-w-6xl mx-auto p-6 space-y-6">

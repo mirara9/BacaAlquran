@@ -1,10 +1,10 @@
-import React, { useEffect } from 'react'
-import { Mic, MicOff, Square, Pause, Play } from 'lucide-react'
+import { useEffect } from 'react'
+import { Mic, MicOff, Square, Pause } from 'lucide-react'
 import { Button } from '@/components/ui/Button'
 import { Progress } from '@/components/ui/Progress'
 import { Card, CardContent } from '@/components/ui/Card'
 import { useAudioRecorder } from '@/hooks/useAudioRecorder'
-import { useAppActions, useIsRecording } from '@/stores/appStore'
+import { useAppActions } from '@/stores/appStore'
 import { formatDuration, cn } from '@/lib/utils'
 
 interface AudioRecorderProps {
@@ -21,7 +21,7 @@ export function AudioRecorder({
   disabled = false
 }: AudioRecorderProps) {
   const { addToast, updateAudioRecording } = useAppActions()
-  const isRecordingFromStore = useIsRecording()
+  // const isRecordingFromStore = useIsRecording()
 
   const {
     isRecording,
@@ -32,7 +32,7 @@ export function AudioRecorder({
     startRecording,
     stopRecording,
     pauseRecording,
-    resumeRecording
+    // resumeRecording
   } = useAudioRecorder({
     maxDuration,
     onStart: () => {

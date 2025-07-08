@@ -308,7 +308,7 @@ export class WasmAnalysisService {
   }
 
   // JavaScript fallback implementations
-  private extractMFCCFallback(audioData: Float32Array, sampleRate: number): number[][] {
+  private extractMFCCFallback(audioData: Float32Array, _sampleRate: number): number[][] {
     // Simplified MFCC extraction
     const features: number[][] = [];
     const frameSize = this.config.bufferSize;

@@ -1,4 +1,3 @@
-import React, { useEffect } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
 import { X, CheckCircle, AlertCircle, AlertTriangle, Info } from 'lucide-react'
 import { Button } from './Button'

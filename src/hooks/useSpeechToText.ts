@@ -25,7 +25,7 @@ export function useSpeechToText(options: UseSpeechToTextOptions = {}): UseSpeech
   const [error, setError] = useState<string | null>(null)
 
   // Browser Web Speech API implementation with real-time support
-  const processBrowserSpeech = useCallback(async (audioBlob: Blob): Promise<SpeechToTextResult> => {
+  const processBrowserSpeech = useCallback(async (_audioBlob: Blob): Promise<SpeechToTextResult> => {
     return new Promise((resolve, reject) => {
       if (!('webkitSpeechRecognition' in window) && !('SpeechRecognition' in window)) {
         reject(new Error('Browser speech recognition not supported'))
@@ -215,7 +215,7 @@ export function useSpeechToText(options: UseSpeechToTextOptions = {}): UseSpeech
   }, [language, options.apiKey])
 
   // Mock implementation for development
-  const processMockSpeech = useCallback(async (audioBlob: Blob): Promise<SpeechToTextResult> => {
+  const processMockSpeech = useCallback(async (_audioBlob: Blob): Promise<SpeechToTextResult> => {
     // Simulate processing delay
     await new Promise(resolve => setTimeout(resolve, 1500))
 

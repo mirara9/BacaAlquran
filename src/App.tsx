@@ -1,6 +1,5 @@
 import React, { Suspense } from 'react'
 import { Routes, Route } from 'react-router-dom'
-import { motion } from 'framer-motion'
 import { Toaster } from '@/components/ui/Toast'
 import { ErrorBoundary } from '@/components/ui/ErrorBoundary'
 import { LoadingSpinner } from '@/components/ui/LoadingSpinner'
